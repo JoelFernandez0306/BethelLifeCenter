@@ -12,6 +12,11 @@
   font-size: medium;
 }
 
+.cal {
+  height: 650px;
+  width: 1200px;
+}
+
 /* #connectHere {
   color: black;
   border: 1px solid white;
