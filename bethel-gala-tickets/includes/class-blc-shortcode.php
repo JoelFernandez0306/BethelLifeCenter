@@ -285,7 +285,7 @@ class BLC_Gala_Shortcode {
                 </div>
 
                 <div class="blc-scanner-stats-bar" id="blc-scanner-stats-bar" style="margin-top: 20px;">
-                    <span id="blc-scanner-checked-in">0</span> checked in
+                    Tickets Scanned: <span id="blc-scanner-checked-in">0 / 0</span>
                 </div>
 
                 <div class="blc-gala-section" style="margin-top: 20px;">

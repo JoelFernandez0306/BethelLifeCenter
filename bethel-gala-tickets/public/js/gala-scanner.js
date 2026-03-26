@@ -102,6 +102,18 @@
         });
     }
 
+    function formatCheckedInTime(dateStr) {
+        if (!dateStr) return 'earlier';
+        var d = new Date(dateStr.replace(' ', 'T'));
+        if (isNaN(d.getTime())) return dateStr;
+        var hours = d.getHours();
+        var mins = d.getMinutes();
+        var ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12 || 12;
+        var minStr = mins < 10 ? '0' + mins : '' + mins;
+        return hours + ':' + minStr + ' ' + ampm;
+    }
+
     function showScanResult(data) {
         var container = document.getElementById('blc-scan-result');
         var icon = document.getElementById('blc-scan-result-icon');
@@ -114,6 +126,8 @@
         // Reset classes
         container.className = 'blc-scan-result';
 
+        var hideDelay = 5000;
+
         if (data.code === 'invalid_ticket' || data.code === 'not_found') {
             container.classList.add('blc-scan-invalid');
             icon.textContent = '\u274C';
@@ -124,11 +138,13 @@
             icon.textContent = '\u274C';
             name.textContent = 'SESSION EXPIRED';
             status.textContent = 'Please refresh the page and re-enter the PIN.';
+            hideDelay = 10000;
         } else if (data.status === 'already_checked_in') {
             container.classList.add('blc-scan-warning');
             icon.textContent = '\u26A0\uFE0F';
             name.textContent = data.attendee_name || 'Unknown';
-            status.textContent = 'Already checked in at ' + (data.checked_in_at || 'earlier');
+            status.textContent = 'DUPLICATE — Already checked in at ' + formatCheckedInTime(data.checked_in_at);
+            hideDelay = 8000;
         } else if (data.status === 'checked_in') {
             container.classList.add('blc-scan-success');
             icon.textContent = '\u2705';
@@ -137,7 +153,7 @@
         } else if (data.code === 'unpaid_ticket') {
             container.classList.add('blc-scan-invalid');
             icon.textContent = '\u274C';
-            name.textContent = 'UNPAID';
+            name.textContent = 'UNPAID TICKET';
             status.textContent = 'This ticket has not been paid for.';
         } else {
             container.classList.add('blc-scan-invalid');
@@ -146,10 +162,10 @@
             status.textContent = data.message || 'Unknown error.';
         }
 
-        // Auto-hide after 5 seconds
+        // Auto-hide (longer for warnings so volunteer notices)
         setTimeout(function () {
             container.style.display = 'none';
-        }, 5000);
+        }, hideDelay);
     }
 
     // ========================================================================
