@@ -119,11 +119,15 @@
     // PayPal Ticket Purchase Buttons
     // ========================================================================
     function initTicketPayPal() {
-        if (typeof paypal === 'undefined') return;
         if (config.soldOut) return;
 
         var container = document.getElementById('blc-paypal-button-container');
         if (!container) return;
+
+        if (typeof paypal === 'undefined') {
+            container.innerHTML = '<div class="blc-message blc-error" style="display:block;">PayPal failed to load. Please check that the Client ID is correct and refresh the page.</div>';
+            return;
+        }
 
         paypal.Buttons({
             style: {
@@ -241,11 +245,15 @@
     // PayPal Donation Buttons
     // ========================================================================
     function initDonationPayPal() {
-        if (typeof paypal === 'undefined') return;
         if (!config.donationEnabled) return;
 
         var container = document.getElementById('blc-paypal-donation-container');
         if (!container) return;
+
+        if (typeof paypal === 'undefined') {
+            container.innerHTML = '<div class="blc-message blc-error" style="display:block;">PayPal failed to load. Please check that the Client ID is correct and refresh the page.</div>';
+            return;
+        }
 
         paypal.Buttons({
             style: {

@@ -60,7 +60,7 @@
             <tr>
                 <th><label for="blc_gala_paypal_client_id">PayPal Client ID</label></th>
                 <td><input type="text" id="blc_gala_paypal_client_id" name="blc_gala_paypal_client_id" value="<?php echo esc_attr( get_option( 'blc_gala_paypal_client_id' ) ); ?>" class="large-text" />
-                <p class="description">Get this from <a href="https://developer.paypal.com/dashboard/applications/live" target="_blank">PayPal Developer Dashboard</a>.</p></td>
+                <p class="description">Get this from <a href="https://developer.paypal.com/dashboard/applications/live" target="_blank">PayPal Developer Dashboard</a> (Live) or <a href="https://developer.paypal.com/dashboard/applications/sandbox" target="_blank">Sandbox</a>.</p></td>
             </tr>
             <tr>
                 <th><label for="blc_gala_paypal_secret">PayPal Secret</label></th>
@@ -68,7 +68,18 @@
             </tr>
             <tr>
                 <th><label for="blc_gala_paypal_sandbox">Sandbox Mode</label></th>
-                <td><label><input type="checkbox" id="blc_gala_paypal_sandbox" name="blc_gala_paypal_sandbox" value="1" <?php checked( get_option( 'blc_gala_paypal_sandbox' ), 1 ); ?> /> Enable sandbox/test mode (use PayPal sandbox credentials)</label></td>
+                <td>
+                    <label><input type="checkbox" id="blc_gala_paypal_sandbox" name="blc_gala_paypal_sandbox" value="1" <?php checked( get_option( 'blc_gala_paypal_sandbox' ), 1 ); ?> /> Enable sandbox/test mode</label>
+                    <p class="description"><strong>Important:</strong> Sandbox mode requires sandbox credentials. Live mode requires live credentials. Make sure they match!</p>
+                </td>
+            </tr>
+            <tr>
+                <th>Test Connection</th>
+                <td>
+                    <button type="button" class="button" id="blc-test-paypal">Test PayPal Connection</button>
+                    <span id="blc-test-paypal-result" style="margin-left: 10px;"></span>
+                    <p class="description">Save settings first, then click to verify your PayPal credentials are working.</p>
+                </td>
             </tr>
         </table>
 

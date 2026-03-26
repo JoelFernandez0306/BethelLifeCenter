@@ -25,4 +25,33 @@
         }
     });
 
+    // Test PayPal connection
+    $('#blc-test-paypal').on('click', function() {
+        var btn = $(this);
+        var result = $('#blc-test-paypal-result');
+        btn.prop('disabled', true);
+        result.html('<em>Testing...</em>').css('color', '#666');
+
+        $.ajax({
+            url: (window.blcGalaAdmin ? blcGalaAdmin.restUrl : '/wp-json/blc-gala/v1/') + 'test-paypal',
+            method: 'POST',
+            headers: { 'X-WP-Nonce': window.blcGalaAdmin ? blcGalaAdmin.nonce : '' },
+            contentType: 'application/json',
+            data: '{}',
+            success: function(data) {
+                if (data.success) {
+                    result.html('<strong style="color: #0a7c00;">' + data.message + '</strong>');
+                } else {
+                    result.html('<strong style="color: #d63638;">' + data.message + '</strong>');
+                }
+            },
+            error: function() {
+                result.html('<strong style="color: #d63638;">Could not reach the server. Please try again.</strong>');
+            },
+            complete: function() {
+                btn.prop('disabled', false);
+            }
+        });
+    });
+
 })(jQuery);

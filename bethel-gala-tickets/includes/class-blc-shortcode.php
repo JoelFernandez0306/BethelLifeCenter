@@ -76,6 +76,7 @@ class BLC_Gala_Shortcode {
             'eventName'     => get_option( 'blc_gala_event_name', '' ),
             'soldOut'       => $tickets_mgr->is_sold_out(),
             'donationEnabled' => (bool) get_option( 'blc_gala_donation_enabled', 1 ),
+            'paypalConfigured' => $paypal->is_configured(),
             'accentColor'   => get_option( 'blc_gala_accent_color', '#C9A84C' ),
             'secondaryColor' => get_option( 'blc_gala_secondary_color', '#1B2A4A' ),
         ) );

@@ -79,6 +79,13 @@ class BLC_Gala_REST_API {
             'callback'            => array( $this, 'get_checkin_stats' ),
             'permission_callback' => array( $this, 'check_scanner_token' ),
         ) );
+
+        // Admin: test PayPal connection
+        register_rest_route( $namespace, '/test-paypal', array(
+            'methods'             => 'POST',
+            'callback'            => array( $this, 'test_paypal' ),
+            'permission_callback' => array( $this, 'check_admin_permission' ),
+        ) );
     }
 
     /**
@@ -332,6 +339,64 @@ class BLC_Gala_REST_API {
             'is_checked_in' => (bool) $ticket->is_checked_in,
             'checked_in_at' => $ticket->checked_in_at,
             'order_status'  => $ticket->order_status,
+        ) );
+    }
+
+    /**
+     * POST /test-paypal — test PayPal API credentials.
+     */
+    public function test_paypal( $request ) {
+        $paypal    = new BLC_Gala_PayPal();
+        $client_id = trim( get_option( 'blc_gala_paypal_client_id', '' ) );
+        $secret    = trim( get_option( 'blc_gala_paypal_secret', '' ) );
+        $sandbox   = get_option( 'blc_gala_paypal_sandbox', 1 );
+
+        if ( empty( $client_id ) || empty( $secret ) ) {
+            return rest_ensure_response( array(
+                'success' => false,
+                'message' => 'Client ID and Secret are both required. Please fill them in and save settings first.',
+            ) );
+        }
+
+        $base_url = $sandbox ? 'https://api-m.sandbox.paypal.com' : 'https://api-m.paypal.com';
+        $response = wp_remote_post( $base_url . '/v1/oauth2/token', array(
+            'headers' => array(
+                'Authorization' => 'Basic ' . base64_encode( $client_id . ':' . $secret ),
+                'Content-Type'  => 'application/x-www-form-urlencoded',
+            ),
+            'body'    => 'grant_type=client_credentials',
+            'timeout' => 15,
+        ) );
+
+        if ( is_wp_error( $response ) ) {
+            return rest_ensure_response( array(
+                'success' => false,
+                'message' => 'Could not connect to PayPal: ' . $response->get_error_message(),
+            ) );
+        }
+
+        $code = wp_remote_retrieve_response_code( $response );
+        $body = json_decode( wp_remote_retrieve_body( $response ), true );
+
+        if ( $code === 200 && ! empty( $body['access_token'] ) ) {
+            $mode = $sandbox ? 'Sandbox' : 'Live';
+            return rest_ensure_response( array(
+                'success' => true,
+                'message' => 'PayPal connection successful! (' . $mode . ' mode)',
+            ) );
+        }
+
+        $error = isset( $body['error_description'] ) ? $body['error_description'] : ( isset( $body['message'] ) ? $body['message'] : 'Unknown error' );
+        $hint  = '';
+        if ( $code === 401 ) {
+            $hint = $sandbox
+                ? ' Make sure you are using Sandbox credentials (not Live).'
+                : ' Make sure you are using Live credentials (not Sandbox). Or enable Sandbox Mode if testing.';
+        }
+
+        return rest_ensure_response( array(
+            'success' => false,
+            'message' => 'PayPal returned error: ' . $error . $hint,
         ) );
     }
 

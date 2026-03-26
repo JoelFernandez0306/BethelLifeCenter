@@ -8,8 +8,8 @@ class BLC_Gala_PayPal {
     private $base_url;
 
     public function __construct() {
-        $this->client_id = get_option( 'blc_gala_paypal_client_id', '' );
-        $this->secret    = get_option( 'blc_gala_paypal_secret', '' );
+        $this->client_id = trim( get_option( 'blc_gala_paypal_client_id', '' ) );
+        $this->secret    = trim( get_option( 'blc_gala_paypal_secret', '' ) );
         $sandbox         = get_option( 'blc_gala_paypal_sandbox', 1 );
         $this->base_url  = $sandbox ? 'https://api-m.sandbox.paypal.com' : 'https://api-m.paypal.com';
     }
@@ -18,7 +18,7 @@ class BLC_Gala_PayPal {
      * Get the PayPal JavaScript SDK URL for the frontend.
      */
     public function get_sdk_url() {
-        $client_id = $this->client_id;
+        $client_id = trim( $this->client_id );
         $intent    = 'capture';
         $currency  = 'USD';
         return "https://www.paypal.com/sdk/js?client-id={$client_id}&intent={$intent}&currency={$currency}&disable-funding=credit";
