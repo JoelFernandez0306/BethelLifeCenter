@@ -54,13 +54,15 @@ class BLC_Gala_Shortcode {
             return;
         }
 
-        // PayPal JS SDK
+        // PayPal JS SDK (only load if configured)
         $paypal = new BLC_Gala_PayPal();
+        $js_deps = array();
         if ( $paypal->is_configured() ) {
             wp_enqueue_script( 'paypal-sdk', $paypal->get_sdk_url(), array(), null, true );
+            $js_deps[] = 'paypal-sdk';
         }
 
-        wp_enqueue_script( 'blc-gala-frontend', BLC_GALA_PLUGIN_URL . 'public/js/gala-frontend.js', array( 'paypal-sdk' ), BLC_GALA_VERSION, true );
+        wp_enqueue_script( 'blc-gala-frontend', BLC_GALA_PLUGIN_URL . 'public/js/gala-frontend.js', $js_deps, BLC_GALA_VERSION, true );
 
         $tickets_mgr = new BLC_Gala_Tickets();
         wp_localize_script( 'blc-gala-frontend', 'blcGala', array(
@@ -153,9 +155,15 @@ class BLC_Gala_Shortcode {
                 <p class="blc-gala-price">$<?php echo esc_html( number_format( $price, 2 ) ); ?> per person</p>
 
                 <form id="blc-gala-ticket-form" class="blc-gala-form">
-                    <div class="blc-form-group">
-                        <label for="blc-ticket-name">Full Name <span class="blc-required">*</span></label>
-                        <input type="text" id="blc-ticket-name" name="buyer_name" required placeholder="Enter your full name" />
+                    <div class="blc-form-row">
+                        <div class="blc-form-group blc-form-half">
+                            <label for="blc-ticket-fname">First Name <span class="blc-required">*</span></label>
+                            <input type="text" id="blc-ticket-fname" name="first_name" required placeholder="First name" />
+                        </div>
+                        <div class="blc-form-group blc-form-half">
+                            <label for="blc-ticket-lname">Last Name <span class="blc-required">*</span></label>
+                            <input type="text" id="blc-ticket-lname" name="last_name" required placeholder="Last name" />
+                        </div>
                     </div>
                     <div class="blc-form-group">
                         <label for="blc-ticket-email">Email Address <span class="blc-required">*</span></label>
@@ -177,6 +185,10 @@ class BLC_Gala_Shortcode {
 
                     <div id="blc-paypal-button-container" class="blc-paypal-buttons"></div>
 
+                    <?php if ( ! ( new BLC_Gala_PayPal() )->is_configured() ) : ?>
+                        <div class="blc-message blc-error" style="display: block;">Payment is not yet configured. Please check back soon!</div>
+                    <?php endif; ?>
+
                     <div id="blc-ticket-message" class="blc-message" style="display: none;"></div>
                 </form>
             </div>
@@ -194,9 +206,15 @@ class BLC_Gala_Shortcode {
                 <p class="blc-gala-description">Your generous donation helps support our missions work around the world. Every dollar makes a difference.</p>
 
                 <form id="blc-gala-donation-form" class="blc-gala-form">
-                    <div class="blc-form-group">
-                        <label for="blc-donation-name">Full Name <span class="blc-required">*</span></label>
-                        <input type="text" id="blc-donation-name" name="donor_name" required placeholder="Enter your full name" />
+                    <div class="blc-form-row">
+                        <div class="blc-form-group blc-form-half">
+                            <label for="blc-donation-fname">First Name <span class="blc-required">*</span></label>
+                            <input type="text" id="blc-donation-fname" name="donor_fname" required placeholder="First name" />
+                        </div>
+                        <div class="blc-form-group blc-form-half">
+                            <label for="blc-donation-lname">Last Name <span class="blc-required">*</span></label>
+                            <input type="text" id="blc-donation-lname" name="donor_lname" required placeholder="Last name" />
+                        </div>
                     </div>
                     <div class="blc-form-group">
                         <label for="blc-donation-email">Email Address <span class="blc-required">*</span></label>
@@ -214,6 +232,10 @@ class BLC_Gala_Shortcode {
                     </div>
 
                     <div id="blc-paypal-donation-container" class="blc-paypal-buttons"></div>
+
+                    <?php if ( ! ( new BLC_Gala_PayPal() )->is_configured() ) : ?>
+                        <div class="blc-message blc-error" style="display: block;">Payment is not yet configured. Please check back soon!</div>
+                    <?php endif; ?>
 
                     <div id="blc-donation-message" class="blc-message" style="display: none;"></div>
                 </form>

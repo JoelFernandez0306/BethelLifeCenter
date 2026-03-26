@@ -159,6 +159,15 @@
     margin: 0 auto;
 }
 
+.blc-form-row {
+    display: flex;
+    gap: 15px;
+}
+
+.blc-form-half {
+    flex: 1;
+}
+
 .blc-form-group {
     margin-bottom: 20px;
 }
@@ -339,6 +348,11 @@
 @media (max-width: 600px) {
     .blc-gala-wrapper {
         padding: 10px;
+    }
+
+    .blc-form-row {
+        flex-direction: column;
+        gap: 0;
     }
 
     .blc-gala-hero {

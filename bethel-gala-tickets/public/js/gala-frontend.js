@@ -13,7 +13,14 @@
     function initCountdown() {
         if (!config.eventDate) return;
 
-        var target = new Date(config.eventDate.replace(' ', 'T')).getTime();
+        // Normalize the date string — handle both "2026-10-17 18:00:00" and "2026-10-17T18:00:00"
+        var dateStr = config.eventDate.replace(' ', 'T');
+        // Ensure it parses correctly by appending timezone if missing
+        if (dateStr.indexOf('Z') === -1 && dateStr.indexOf('+') === -1 && dateStr.indexOf('-', 10) === -1) {
+            // No timezone info — treat as local time
+        }
+        var target = new Date(dateStr).getTime();
+        if (isNaN(target)) return;
 
         function update() {
             var now = Date.now();
@@ -126,11 +133,16 @@
 
             // Validate form before allowing PayPal to open
             onClick: function (data, actions) {
-                var name = document.getElementById('blc-ticket-name');
+                var fname = document.getElementById('blc-ticket-fname');
+                var lname = document.getElementById('blc-ticket-lname');
                 var email = document.getElementById('blc-ticket-email');
 
-                if (!name || !name.value.trim()) {
-                    showMessage('blc-ticket-message', 'Please enter your full name.', 'error');
+                if (!fname || !fname.value.trim()) {
+                    showMessage('blc-ticket-message', 'Please enter your first name.', 'error');
+                    return actions.reject();
+                }
+                if (!lname || !lname.value.trim()) {
+                    showMessage('blc-ticket-message', 'Please enter your last name.', 'error');
                     return actions.reject();
                 }
                 if (!email || !email.value.trim() || !isValidEmail(email.value)) {
@@ -143,7 +155,9 @@
             },
 
             createOrder: function () {
-                var name = document.getElementById('blc-ticket-name').value.trim();
+                var fname = document.getElementById('blc-ticket-fname').value.trim();
+                var lname = document.getElementById('blc-ticket-lname').value.trim();
+                var name = fname + ' ' + lname;
                 var email = document.getElementById('blc-ticket-email').value.trim();
                 var quantity = getSelectedQuantity();
 
@@ -240,12 +254,17 @@
             },
 
             onClick: function (data, actions) {
-                var name = document.getElementById('blc-donation-name');
+                var fname = document.getElementById('blc-donation-fname');
+                var lname = document.getElementById('blc-donation-lname');
                 var email = document.getElementById('blc-donation-email');
                 var amount = document.getElementById('blc-donation-amount');
 
-                if (!name || !name.value.trim()) {
-                    showMessage('blc-donation-message', 'Please enter your full name.', 'error');
+                if (!fname || !fname.value.trim()) {
+                    showMessage('blc-donation-message', 'Please enter your first name.', 'error');
+                    return actions.reject();
+                }
+                if (!lname || !lname.value.trim()) {
+                    showMessage('blc-donation-message', 'Please enter your last name.', 'error');
                     return actions.reject();
                 }
                 if (!email || !email.value.trim() || !isValidEmail(email.value)) {
@@ -262,7 +281,9 @@
             },
 
             createOrder: function () {
-                var name = document.getElementById('blc-donation-name').value.trim();
+                var fname = document.getElementById('blc-donation-fname').value.trim();
+                var lname = document.getElementById('blc-donation-lname').value.trim();
+                var name = fname + ' ' + lname;
                 var email = document.getElementById('blc-donation-email').value.trim();
                 var amount = parseFloat(document.getElementById('blc-donation-amount').value);
 
