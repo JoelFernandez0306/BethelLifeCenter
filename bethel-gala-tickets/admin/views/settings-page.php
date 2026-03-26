@@ -1,0 +1,134 @@
+<?php if ( ! defined( 'ABSPATH' ) ) exit; ?>
+<div class="wrap blc-gala-settings">
+    <h1>Always on Mission Gala — Settings</h1>
+
+    <?php
+    $tickets_mgr = new BLC_Gala_Tickets();
+    $remaining   = $tickets_mgr->get_remaining_count();
+    $total       = (int) get_option( 'blc_gala_total_tickets', 100 );
+    $sold        = $total - $remaining;
+    ?>
+    <div class="blc-gala-dashboard">
+        <div class="blc-gala-stat">
+            <span class="blc-gala-stat-number"><?php echo esc_html( $sold ); ?></span>
+            <span class="blc-gala-stat-label">Tickets Sold</span>
+        </div>
+        <div class="blc-gala-stat">
+            <span class="blc-gala-stat-number"><?php echo esc_html( $remaining ); ?></span>
+            <span class="blc-gala-stat-label">Tickets Remaining</span>
+        </div>
+        <div class="blc-gala-stat">
+            <span class="blc-gala-stat-number"><?php echo esc_html( $total ); ?></span>
+            <span class="blc-gala-stat-label">Total Tickets</span>
+        </div>
+    </div>
+
+    <form method="post" action="options.php">
+        <?php settings_fields( 'blc_gala_settings' ); ?>
+
+        <h2>Event Details</h2>
+        <table class="form-table">
+            <tr>
+                <th><label for="blc_gala_event_name">Event Name</label></th>
+                <td><input type="text" id="blc_gala_event_name" name="blc_gala_event_name" value="<?php echo esc_attr( get_option( 'blc_gala_event_name' ) ); ?>" class="regular-text" /></td>
+            </tr>
+            <tr>
+                <th><label for="blc_gala_event_tagline">Event Tagline</label></th>
+                <td><input type="text" id="blc_gala_event_tagline" name="blc_gala_event_tagline" value="<?php echo esc_attr( get_option( 'blc_gala_event_tagline' ) ); ?>" class="regular-text" /></td>
+            </tr>
+            <tr>
+                <th><label for="blc_gala_event_date">Event Date &amp; Time</label></th>
+                <td><input type="datetime-local" id="blc_gala_event_date" name="blc_gala_event_date" value="<?php echo esc_attr( str_replace( ' ', 'T', get_option( 'blc_gala_event_date' ) ) ); ?>" /></td>
+            </tr>
+            <tr>
+                <th><label for="blc_gala_total_tickets">Total Tickets Available</label></th>
+                <td><input type="number" id="blc_gala_total_tickets" name="blc_gala_total_tickets" value="<?php echo esc_attr( get_option( 'blc_gala_total_tickets' ) ); ?>" min="1" class="small-text" /></td>
+            </tr>
+            <tr>
+                <th><label for="blc_gala_ticket_price">Ticket Price ($)</label></th>
+                <td><input type="number" id="blc_gala_ticket_price" name="blc_gala_ticket_price" value="<?php echo esc_attr( get_option( 'blc_gala_ticket_price' ) ); ?>" min="0" step="0.01" class="small-text" /></td>
+            </tr>
+            <tr>
+                <th><label for="blc_gala_max_per_order">Max Tickets Per Order</label></th>
+                <td><input type="number" id="blc_gala_max_per_order" name="blc_gala_max_per_order" value="<?php echo esc_attr( get_option( 'blc_gala_max_per_order', 1 ) ); ?>" min="1" class="small-text" />
+                <p class="description">Currently set to 1 (one ticket per person).</p></td>
+            </tr>
+        </table>
+
+        <h2>PayPal Settings</h2>
+        <table class="form-table">
+            <tr>
+                <th><label for="blc_gala_paypal_client_id">PayPal Client ID</label></th>
+                <td><input type="text" id="blc_gala_paypal_client_id" name="blc_gala_paypal_client_id" value="<?php echo esc_attr( get_option( 'blc_gala_paypal_client_id' ) ); ?>" class="large-text" />
+                <p class="description">Get this from <a href="https://developer.paypal.com/dashboard/applications/live" target="_blank">PayPal Developer Dashboard</a>.</p></td>
+            </tr>
+            <tr>
+                <th><label for="blc_gala_paypal_secret">PayPal Secret</label></th>
+                <td><input type="password" id="blc_gala_paypal_secret" name="blc_gala_paypal_secret" value="<?php echo esc_attr( get_option( 'blc_gala_paypal_secret' ) ); ?>" class="large-text" /></td>
+            </tr>
+            <tr>
+                <th><label for="blc_gala_paypal_sandbox">Sandbox Mode</label></th>
+                <td><label><input type="checkbox" id="blc_gala_paypal_sandbox" name="blc_gala_paypal_sandbox" value="1" <?php checked( get_option( 'blc_gala_paypal_sandbox' ), 1 ); ?> /> Enable sandbox/test mode (use PayPal sandbox credentials)</label></td>
+            </tr>
+        </table>
+
+        <h2>Donation Settings</h2>
+        <table class="form-table">
+            <tr>
+                <th><label for="blc_gala_donation_enabled">Enable Donations</label></th>
+                <td><label><input type="checkbox" id="blc_gala_donation_enabled" name="blc_gala_donation_enabled" value="1" <?php checked( get_option( 'blc_gala_donation_enabled' ), 1 ); ?> /> Allow donations (shown when sold out, and optionally alongside tickets)</label></td>
+            </tr>
+            <tr>
+                <th><label for="blc_gala_donation_message">Sold-Out Message</label></th>
+                <td><textarea id="blc_gala_donation_message" name="blc_gala_donation_message" rows="3" class="large-text"><?php echo esc_textarea( get_option( 'blc_gala_donation_message' ) ); ?></textarea></td>
+            </tr>
+        </table>
+
+        <h2>Appearance</h2>
+        <table class="form-table">
+            <tr>
+                <th><label for="blc_gala_accent_color">Accent Color</label></th>
+                <td><input type="color" id="blc_gala_accent_color" name="blc_gala_accent_color" value="<?php echo esc_attr( get_option( 'blc_gala_accent_color', '#C9A84C' ) ); ?>" /></td>
+            </tr>
+            <tr>
+                <th><label for="blc_gala_secondary_color">Secondary Color</label></th>
+                <td><input type="color" id="blc_gala_secondary_color" name="blc_gala_secondary_color" value="<?php echo esc_attr( get_option( 'blc_gala_secondary_color', '#1B2A4A' ) ); ?>" /></td>
+            </tr>
+        </table>
+
+        <h2>Shortcode</h2>
+        <table class="form-table">
+            <tr>
+                <th>Usage</th>
+                <td>
+                    <code>[blc_gala_tickets]</code>
+                    <p class="description">Paste this shortcode into any Divi Code Module or Text Module to display the ticket sales page.</p>
+                </td>
+            </tr>
+        </table>
+
+        <h2>Promotional QR Code</h2>
+        <table class="form-table">
+            <tr>
+                <th>QR Code</th>
+                <td>
+                    <div id="blc-promo-qr">
+                        <?php
+                        $page_url = get_option( 'blc_gala_page_url', '' );
+                        if ( $page_url ) {
+                            $qr = new BLC_Gala_QR_Generator();
+                            echo $qr->generate_svg( $page_url, 200 );
+                            echo '<p class="description">This QR code links to: <a href="' . esc_url( $page_url ) . '" target="_blank">' . esc_html( $page_url ) . '</a></p>';
+                            echo '<p><button type="button" class="button" id="blc-download-qr">Download QR Code (PNG)</button></p>';
+                        } else {
+                            echo '<p class="description">Publish a page with the <code>[blc_gala_tickets]</code> shortcode first. The QR code will appear here automatically linking to that page.</p>';
+                        }
+                        ?>
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <?php submit_button( 'Save Settings' ); ?>
+    </form>
+</div>

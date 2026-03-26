@@ -1,0 +1,84 @@
+/* Gala Tickets Admin Styles */
+
+.blc-gala-settings .form-table th {
+    width: 200px;
+}
+
+/* Dashboard Stats */
+.blc-gala-dashboard {
+    display: flex;
+    gap: 20px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+}
+
+.blc-gala-stat {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 6px;
+    padding: 20px 30px;
+    text-align: center;
+    flex: 1;
+    min-width: 120px;
+}
+
+.blc-gala-stat-number {
+    display: block;
+    font-size: 36px;
+    font-weight: 700;
+    color: #1B2A4A;
+    line-height: 1.2;
+}
+
+.blc-gala-stat-label {
+    display: block;
+    font-size: 13px;
+    color: #666;
+    margin-top: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Order Badges */
+.blc-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.blc-badge-ticket {
+    background: #e8f4fd;
+    color: #1565c0;
+}
+
+.blc-badge-donation {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+/* Status labels */
+.blc-status {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.blc-status-completed {
+    background: #d4edda;
+    color: #155724;
+}
+
+.blc-status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.blc-status-failed,
+.blc-status-refunded {
+    background: #f8d7da;
+    color: #721c24;
+}
