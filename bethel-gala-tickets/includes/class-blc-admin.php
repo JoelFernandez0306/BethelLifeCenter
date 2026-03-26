@@ -62,6 +62,9 @@ class BLC_Gala_Admin {
         register_setting( 'blc_gala_settings', 'blc_gala_paypal_secret', array( 'sanitize_callback' => 'sanitize_text_field' ) );
         register_setting( 'blc_gala_settings', 'blc_gala_paypal_sandbox', array( 'sanitize_callback' => 'absint' ) );
 
+        // Scanner settings
+        register_setting( 'blc_gala_settings', 'blc_gala_scanner_pin', array( 'sanitize_callback' => 'sanitize_text_field' ) );
+
         // Display settings
         register_setting( 'blc_gala_settings', 'blc_gala_donation_enabled', array( 'sanitize_callback' => 'absint' ) );
         register_setting( 'blc_gala_settings', 'blc_gala_donation_message', array( 'sanitize_callback' => 'wp_kses_post' ) );

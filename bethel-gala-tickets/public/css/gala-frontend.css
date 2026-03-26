@@ -339,3 +339,183 @@
         font-size: 0.9em;
     }
 }
+
+/* ==========================================================================
+   Volunteer Door Scanner Styles
+   ========================================================================== */
+
+/* PIN Input */
+.blc-scanner-pin-input {
+    width: 100% !important;
+    padding: 16px !important;
+    font-size: 1.5em !important;
+    text-align: center;
+    letter-spacing: 8px;
+    border: 2px solid var(--blc-border) !important;
+    border-radius: var(--blc-radius) !important;
+    font-family: monospace;
+}
+
+.blc-scanner-pin-input:focus {
+    border-color: var(--blc-accent) !important;
+    box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.2);
+    outline: none;
+}
+
+.blc-scanner-pin-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--blc-secondary);
+    color: #ffffff;
+    border: none;
+    border-radius: var(--blc-radius);
+    font-size: 1.1em;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.2s ease;
+}
+
+.blc-scanner-pin-btn:hover {
+    background: var(--blc-accent);
+    color: var(--blc-secondary);
+}
+
+/* Scanner Stats Bar */
+.blc-scanner-stats-bar {
+    text-align: center;
+    background: var(--blc-secondary);
+    color: #ffffff;
+    padding: 12px 20px;
+    border-radius: var(--blc-radius);
+    font-size: 1.1em;
+}
+
+#blc-scanner-checked-in {
+    font-weight: 700;
+    color: var(--blc-accent);
+    font-size: 1.2em;
+}
+
+/* Scanner Controls */
+.blc-scanner-controls {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.blc-scanner-btn {
+    padding: 12px 24px;
+    border: 2px solid var(--blc-border);
+    border-radius: var(--blc-radius);
+    background: var(--blc-bg);
+    color: var(--blc-text);
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+
+.blc-scanner-btn-primary {
+    background: var(--blc-secondary);
+    color: #ffffff;
+    border-color: var(--blc-secondary);
+}
+
+.blc-scanner-btn-primary:hover {
+    background: var(--blc-accent);
+    border-color: var(--blc-accent);
+    color: var(--blc-secondary);
+}
+
+/* Scan Result Card */
+.blc-scan-result {
+    text-align: center;
+    padding: 25px;
+    border-radius: var(--blc-radius);
+    margin-top: 20px;
+    border: 2px solid transparent;
+    animation: blc-scan-pop 0.3s ease;
+}
+
+@keyframes blc-scan-pop {
+    0% { transform: scale(0.9); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.blc-scan-result-icon {
+    font-size: 56px;
+    margin-bottom: 10px;
+    line-height: 1;
+}
+
+.blc-scan-result-name {
+    font-size: 1.6em;
+    font-weight: 700;
+    font-family: Georgia, serif;
+    margin-bottom: 5px;
+}
+
+.blc-scan-result-status {
+    font-size: 1em;
+    color: inherit;
+}
+
+.blc-scan-success {
+    background: #d4edda;
+    border-color: #28a745;
+    color: #155724;
+}
+
+.blc-scan-warning {
+    background: #fff3cd;
+    border-color: #ffc107;
+    color: #856404;
+}
+
+.blc-scan-invalid {
+    background: #f8d7da;
+    border-color: #dc3545;
+    color: #721c24;
+}
+
+/* Scanner manual input inherits form styles */
+.blc-scanner-manual input[type="text"] {
+    padding: 12px 15px;
+    border: 1px solid var(--blc-border);
+    border-radius: var(--blc-radius);
+    font-size: 1em;
+    font-family: inherit;
+    text-transform: uppercase;
+    box-sizing: border-box;
+}
+
+.blc-scanner-manual input[type="text"]:focus {
+    outline: none;
+    border-color: var(--blc-accent);
+    box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.2);
+}
+
+/* Mobile optimizations for scanner */
+@media (max-width: 600px) {
+    .blc-scan-result-icon {
+        font-size: 48px;
+    }
+
+    .blc-scan-result-name {
+        font-size: 1.3em;
+    }
+
+    .blc-scanner-btn {
+        width: 100%;
+        padding: 14px;
+    }
+
+    .blc-scanner-manual > div {
+        flex-direction: column !important;
+    }
+
+    .blc-scanner-manual input[type="text"] {
+        width: 100% !important;
+    }
+}

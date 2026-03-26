@@ -66,6 +66,7 @@ class BLC_Gala_Activator {
             'blc_gala_donation_enabled'    => 1,
             'blc_gala_donation_message'    => 'All gala tickets have been claimed! You can still support our missions with a generous donation.',
             'blc_gala_confirmation_message' => 'Thank you for your purchase! Your ticket with a QR code has been sent to your email. Please present it at the door.',
+            'blc_gala_scanner_pin'         => '1234',
             'blc_gala_accent_color'        => '#C9A84C',
             'blc_gala_secondary_color'     => '#1B2A4A',
         );

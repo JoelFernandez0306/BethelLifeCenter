@@ -58,6 +58,27 @@ class BLC_Gala_REST_API {
             'callback'            => array( $this, 'get_ticket_info' ),
             'permission_callback' => array( $this, 'check_admin_permission' ),
         ) );
+
+        // Public scanner: authenticate with PIN
+        register_rest_route( $namespace, '/scanner-auth', array(
+            'methods'             => 'POST',
+            'callback'            => array( $this, 'scanner_auth' ),
+            'permission_callback' => '__return_true',
+        ) );
+
+        // Public scanner: validate/check-in a ticket with scanner token
+        register_rest_route( $namespace, '/scan-validate/(?P<code>[A-Za-z0-9]+)', array(
+            'methods'             => 'POST',
+            'callback'            => array( $this, 'validate_ticket' ),
+            'permission_callback' => array( $this, 'check_scanner_token' ),
+        ) );
+
+        // Public scanner: get check-in stats with scanner token
+        register_rest_route( $namespace, '/checkin-stats', array(
+            'methods'             => 'GET',
+            'callback'            => array( $this, 'get_checkin_stats' ),
+            'permission_callback' => array( $this, 'check_scanner_token' ),
+        ) );
     }
 
     /**
@@ -316,5 +337,65 @@ class BLC_Gala_REST_API {
 
     public function check_admin_permission() {
         return current_user_can( 'manage_options' );
+    }
+
+    /**
+     * Generate a scanner token from the PIN (valid for the current day).
+     */
+    private function generate_scanner_token( $pin ) {
+        return wp_hash( $pin . '|' . date( 'Y-m-d' ) );
+    }
+
+    /**
+     * POST /scanner-auth — validate PIN and return a scanner token.
+     */
+    public function scanner_auth( $request ) {
+        $params = $request->get_json_params();
+        $pin    = isset( $params['pin'] ) ? sanitize_text_field( $params['pin'] ) : '';
+
+        $stored_pin = get_option( 'blc_gala_scanner_pin', '' );
+
+        if ( empty( $stored_pin ) || $pin !== $stored_pin ) {
+            return new WP_Error( 'invalid_pin', 'Incorrect PIN. Please try again.', array( 'status' => 401 ) );
+        }
+
+        $token = $this->generate_scanner_token( $stored_pin );
+
+        return rest_ensure_response( array(
+            'token'   => $token,
+            'expires' => date( 'Y-m-d', strtotime( '+1 day' ) ),
+        ) );
+    }
+
+    /**
+     * Permission callback: verify the X-BLC-Scanner-Token header.
+     */
+    public function check_scanner_token( $request ) {
+        // Also allow WordPress admins through
+        if ( current_user_can( 'manage_options' ) ) {
+            return true;
+        }
+
+        $token = $request->get_header( 'X-BLC-Scanner-Token' );
+        if ( empty( $token ) ) {
+            return new WP_Error( 'missing_token', 'Scanner authentication required.', array( 'status' => 401 ) );
+        }
+
+        $stored_pin    = get_option( 'blc_gala_scanner_pin', '' );
+        $expected_token = $this->generate_scanner_token( $stored_pin );
+
+        if ( ! hash_equals( $expected_token, $token ) ) {
+            return new WP_Error( 'invalid_token', 'Scanner token expired or invalid. Please re-enter the PIN.', array( 'status' => 401 ) );
+        }
+
+        return true;
+    }
+
+    /**
+     * GET /checkin-stats — return check-in statistics for the scanner UI.
+     */
+    public function get_checkin_stats( $request ) {
+        $stats = BLC_Gala_Scanner::get_stats();
+        return rest_ensure_response( $stats );
     }
 }

@@ -96,13 +96,45 @@
             </tr>
         </table>
 
-        <h2>Shortcode</h2>
+        <h2>Door Scanner</h2>
         <table class="form-table">
             <tr>
-                <th>Usage</th>
+                <th><label for="blc_gala_scanner_pin">Scanner PIN</label></th>
+                <td>
+                    <input type="text" id="blc_gala_scanner_pin" name="blc_gala_scanner_pin" value="<?php echo esc_attr( get_option( 'blc_gala_scanner_pin', '1234' ) ); ?>" class="small-text" maxlength="8" />
+                    <p class="description">Volunteers enter this PIN to access the door scanner. Share this with your door staff.</p>
+                </td>
+            </tr>
+            <tr>
+                <th>Volunteer Scanner Shortcode</th>
+                <td>
+                    <code>[blc_gala_scanner]</code>
+                    <p class="description">Create a page with this shortcode for door volunteers. They only need the PIN &mdash; no WordPress login required.</p>
+                </td>
+            </tr>
+            <tr>
+                <th>Admin Scanner</th>
+                <td>
+                    <a href="<?php echo esc_url( admin_url( 'admin.php?page=blc-gala-scanner' ) ); ?>" class="button">Open Admin Scanner</a>
+                    <p class="description">This scanner requires WordPress admin login. Use the volunteer shortcode above for door staff.</p>
+                </td>
+            </tr>
+        </table>
+
+        <h2>Shortcodes</h2>
+        <table class="form-table">
+            <tr>
+                <th>Ticket Sales Page</th>
                 <td>
                     <code>[blc_gala_tickets]</code>
                     <p class="description">Paste this shortcode into any Divi Code Module or Text Module to display the ticket sales page.</p>
+                </td>
+            </tr>
+            <tr>
+                <th>Volunteer Scanner Page</th>
+                <td>
+                    <code>[blc_gala_scanner]</code>
+                    <p class="description">Paste this into a separate page for door volunteers. PIN-protected, no login needed.</p>
                 </td>
             </tr>
         </table>

@@ -30,6 +30,7 @@ $options = array(
     'blc_gala_confirmation_message',
     'blc_gala_accent_color',
     'blc_gala_secondary_color',
+    'blc_gala_scanner_pin',
     'blc_gala_page_url',
     'blc_gala_db_version',
 );

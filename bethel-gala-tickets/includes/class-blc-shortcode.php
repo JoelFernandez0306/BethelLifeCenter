@@ -5,6 +5,7 @@ class BLC_Gala_Shortcode {
 
     public function __construct() {
         add_shortcode( 'blc_gala_tickets', array( $this, 'render' ) );
+        add_shortcode( 'blc_gala_scanner', array( $this, 'render_scanner' ) );
         add_action( 'wp_enqueue_scripts', array( $this, 'maybe_enqueue_assets' ) );
         add_action( 'template_redirect', array( $this, 'detect_page_url' ) );
     }
@@ -27,11 +28,31 @@ class BLC_Gala_Shortcode {
      */
     public function maybe_enqueue_assets() {
         global $post;
-        if ( ! $post || ! has_shortcode( $post->post_content, 'blc_gala_tickets' ) ) {
+        if ( ! $post ) {
+            return;
+        }
+
+        $has_tickets = has_shortcode( $post->post_content, 'blc_gala_tickets' );
+        $has_scanner = has_shortcode( $post->post_content, 'blc_gala_scanner' );
+
+        if ( ! $has_tickets && ! $has_scanner ) {
             return;
         }
 
         wp_enqueue_style( 'blc-gala-frontend', BLC_GALA_PLUGIN_URL . 'public/css/gala-frontend.css', array(), BLC_GALA_VERSION );
+
+        // Scanner shortcode assets
+        if ( $has_scanner ) {
+            wp_enqueue_script( 'html5-qrcode', 'https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js', array(), '2.3.8', true );
+            wp_enqueue_script( 'blc-gala-scanner', BLC_GALA_PLUGIN_URL . 'public/js/gala-scanner.js', array( 'html5-qrcode' ), BLC_GALA_VERSION, true );
+            wp_localize_script( 'blc-gala-scanner', 'blcScanner', array(
+                'restUrl' => rest_url( 'blc-gala/v1/' ),
+            ) );
+        }
+
+        if ( ! $has_tickets ) {
+            return;
+        }
 
         // PayPal JS SDK
         $paypal = new BLC_Gala_PayPal();
@@ -185,6 +206,76 @@ class BLC_Gala_Shortcode {
                 </form>
             </div>
             <?php endif; ?>
+
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+
+    /**
+     * Render the [blc_gala_scanner] shortcode — PIN-protected public scanner.
+     */
+    public function render_scanner( $atts ) {
+        $accent    = get_option( 'blc_gala_accent_color', '#C9A84C' );
+        $secondary = get_option( 'blc_gala_secondary_color', '#1B2A4A' );
+
+        ob_start();
+        ?>
+        <div id="blc-scanner-wrapper" class="blc-gala-wrapper blc-scanner-wrapper" style="--blc-accent: <?php echo esc_attr( $accent ); ?>; --blc-secondary: <?php echo esc_attr( $secondary ); ?>;">
+
+            <!-- PIN Entry -->
+            <div id="blc-scanner-pin-section" class="blc-scanner-pin-section">
+                <div class="blc-gala-hero">
+                    <h1 class="blc-gala-title">Door Scanner</h1>
+                    <p class="blc-gala-tagline"><?php echo esc_html( get_option( 'blc_gala_event_name', 'Always on Mission Gala 2026' ) ); ?></p>
+                </div>
+                <div class="blc-gala-section" style="text-align: center; margin-top: 20px;">
+                    <h2 class="blc-gala-section-title">Enter Scanner PIN</h2>
+                    <form id="blc-scanner-pin-form" class="blc-gala-form" style="max-width: 300px; margin: 20px auto;">
+                        <div class="blc-form-group">
+                            <input type="password" id="blc-scanner-pin-input" class="blc-scanner-pin-input" placeholder="Enter PIN" maxlength="8" inputmode="numeric" autocomplete="off" required />
+                        </div>
+                        <button type="submit" class="blc-scanner-pin-btn">Access Scanner</button>
+                    </form>
+                    <div id="blc-pin-message" class="blc-message" style="display: none;"></div>
+                </div>
+            </div>
+
+            <!-- Scanner UI (hidden until authenticated) -->
+            <div id="blc-scanner-ui-section" class="blc-scanner-ui-section" style="display: none;">
+                <div class="blc-gala-hero">
+                    <h1 class="blc-gala-title">Door Scanner</h1>
+                    <p class="blc-gala-tagline"><?php echo esc_html( get_option( 'blc_gala_event_name', 'Always on Mission Gala 2026' ) ); ?></p>
+                </div>
+
+                <div class="blc-scanner-stats-bar" id="blc-scanner-stats-bar" style="margin-top: 20px;">
+                    <span id="blc-scanner-checked-in">0</span> checked in
+                </div>
+
+                <div class="blc-gala-section" style="margin-top: 20px;">
+                    <div class="blc-scanner-controls">
+                        <button id="blc-scan-start-camera" class="blc-scanner-btn blc-scanner-btn-primary">Start Camera</button>
+                        <button id="blc-scan-stop-camera" class="blc-scanner-btn" style="display: none;">Stop Camera</button>
+                    </div>
+
+                    <div id="blc-scan-qr-reader" style="width: 100%; max-width: 400px; margin: 15px auto;"></div>
+
+                    <div class="blc-scanner-manual" style="margin-top: 20px;">
+                        <label for="blc-scan-manual-code" style="font-weight: 600; display: block; margin-bottom: 6px;">Or enter ticket code:</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="blc-scan-manual-code" placeholder="Ticket code" style="flex: 1; text-transform: uppercase;" />
+                            <button id="blc-scan-manual-btn" class="blc-scanner-btn blc-scanner-btn-primary">Check In</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scan Result -->
+                <div id="blc-scan-result" class="blc-scan-result" style="display: none;">
+                    <div id="blc-scan-result-icon" class="blc-scan-result-icon"></div>
+                    <div id="blc-scan-result-name" class="blc-scan-result-name"></div>
+                    <div id="blc-scan-result-status" class="blc-scan-result-status"></div>
+                </div>
+            </div>
 
         </div>
         <?php
