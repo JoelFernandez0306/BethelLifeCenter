@@ -97,20 +97,26 @@
     // Quantity Selector + Dynamic Total
     // ========================================================================
     function initQuantitySelector() {
-        var select = document.getElementById('blc-ticket-quantity');
+        var input = document.getElementById('blc-ticket-quantity');
         var totalEl = document.getElementById('blc-ticket-total');
-        if (!select || !totalEl) return;
+        if (!input || !totalEl) return;
 
-        select.addEventListener('change', function () {
-            var qty = parseInt(select.value) || 1;
+        function updateTotal() {
+            var qty = parseInt(input.value) || 1;
+            var max = parseInt(input.max) || 10;
+            if (qty < 1) qty = 1;
+            if (qty > max) qty = max;
             var total = (qty * config.price).toFixed(2);
             totalEl.textContent = '$' + total;
-        });
+        }
+
+        input.addEventListener('input', updateTotal);
+        input.addEventListener('change', updateTotal);
     }
 
     function getSelectedQuantity() {
-        var select = document.getElementById('blc-ticket-quantity');
-        return select ? (parseInt(select.value) || 1) : 1;
+        var input = document.getElementById('blc-ticket-quantity');
+        return input ? (parseInt(input.value) || 1) : 1;
     }
 
     // ========================================================================

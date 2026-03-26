@@ -76,5 +76,10 @@ class BLC_Gala_Activator {
                 add_option( $key, $value );
             }
         }
+
+        // Upgrade: if max_per_order was set to 1 from an older version, bump to 10
+        if ( (int) get_option( 'blc_gala_max_per_order' ) === 1 ) {
+            update_option( 'blc_gala_max_per_order', 10 );
+        }
     }
 }
