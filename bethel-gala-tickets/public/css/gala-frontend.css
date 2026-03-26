@@ -190,10 +190,43 @@
     transition: border-color 0.2s ease;
 }
 
-.blc-form-group input:focus {
+.blc-form-group input:focus,
+.blc-form-group select:focus {
     outline: none;
     border-color: var(--blc-accent);
     box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.2);
+}
+
+.blc-form-group select {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid var(--blc-border);
+    border-radius: var(--blc-radius);
+    font-size: 1em;
+    font-family: inherit;
+    color: var(--blc-text);
+    background: var(--blc-bg);
+    box-sizing: border-box;
+    cursor: pointer;
+    appearance: auto;
+}
+
+.blc-form-hint {
+    font-size: 0.85em;
+    color: var(--blc-text-light) !important;
+    margin: 6px 0 0 !important;
+    font-style: italic;
+}
+
+.blc-form-total {
+    font-size: 1.2em;
+    color: var(--blc-secondary) !important;
+    margin: 10px 0 0 !important;
+}
+
+.blc-form-total strong {
+    color: var(--blc-accent);
+    font-size: 1.1em;
 }
 
 /* Donation Presets */

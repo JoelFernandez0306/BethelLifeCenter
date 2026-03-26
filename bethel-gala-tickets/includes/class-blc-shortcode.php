@@ -149,7 +149,7 @@ class BLC_Gala_Shortcode {
 
             <!-- Ticket Purchase Section -->
             <div id="blc-gala-ticket-section" class="blc-gala-section" <?php echo $sold_out ? 'style="display:none;"' : ''; ?>>
-                <h2 class="blc-gala-section-title">Get Your Ticket</h2>
+                <h2 class="blc-gala-section-title">Get Your Tickets</h2>
                 <p class="blc-gala-price">$<?php echo esc_html( number_format( $price, 2 ) ); ?> per person</p>
 
                 <form id="blc-gala-ticket-form" class="blc-gala-form">
@@ -160,6 +160,19 @@ class BLC_Gala_Shortcode {
                     <div class="blc-form-group">
                         <label for="blc-ticket-email">Email Address <span class="blc-required">*</span></label>
                         <input type="email" id="blc-ticket-email" name="buyer_email" required placeholder="Enter your email address" />
+                        <p class="blc-form-hint">All ticket QR codes will be sent to this email.</p>
+                    </div>
+                    <div class="blc-form-group">
+                        <label for="blc-ticket-quantity">Number of Tickets <span class="blc-required">*</span></label>
+                        <select id="blc-ticket-quantity" name="quantity">
+                            <?php
+                            $max = (int) get_option( 'blc_gala_max_per_order', 10 );
+                            for ( $i = 1; $i <= $max; $i++ ) :
+                            ?>
+                                <option value="<?php echo $i; ?>"><?php echo $i; ?><?php echo $i === 1 ? ' ticket' : ' tickets'; ?> &mdash; $<?php echo esc_html( number_format( $price * $i, 2 ) ); ?></option>
+                            <?php endfor; ?>
+                        </select>
+                        <p class="blc-form-total">Total: <strong id="blc-ticket-total">$<?php echo esc_html( number_format( $price, 2 ) ); ?></strong></p>
                     </div>
 
                     <div id="blc-paypal-button-container" class="blc-paypal-buttons"></div>

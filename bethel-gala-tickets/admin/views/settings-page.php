@@ -51,7 +51,7 @@
             <tr>
                 <th><label for="blc_gala_max_per_order">Max Tickets Per Order</label></th>
                 <td><input type="number" id="blc_gala_max_per_order" name="blc_gala_max_per_order" value="<?php echo esc_attr( get_option( 'blc_gala_max_per_order', 1 ) ); ?>" min="1" class="small-text" />
-                <p class="description">Currently set to 1 (one ticket per person).</p></td>
+                <p class="description">Maximum number of tickets a buyer can purchase in a single order.</p></td>
             </tr>
         </table>
 

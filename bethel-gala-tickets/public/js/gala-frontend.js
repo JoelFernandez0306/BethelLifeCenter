@@ -87,6 +87,26 @@
     }
 
     // ========================================================================
+    // Quantity Selector + Dynamic Total
+    // ========================================================================
+    function initQuantitySelector() {
+        var select = document.getElementById('blc-ticket-quantity');
+        var totalEl = document.getElementById('blc-ticket-total');
+        if (!select || !totalEl) return;
+
+        select.addEventListener('change', function () {
+            var qty = parseInt(select.value) || 1;
+            var total = (qty * config.price).toFixed(2);
+            totalEl.textContent = '$' + total;
+        });
+    }
+
+    function getSelectedQuantity() {
+        var select = document.getElementById('blc-ticket-quantity');
+        return select ? (parseInt(select.value) || 1) : 1;
+    }
+
+    // ========================================================================
     // PayPal Ticket Purchase Buttons
     // ========================================================================
     function initTicketPayPal() {
@@ -125,6 +145,7 @@
             createOrder: function () {
                 var name = document.getElementById('blc-ticket-name').value.trim();
                 var email = document.getElementById('blc-ticket-email').value.trim();
+                var quantity = getSelectedQuantity();
 
                 showMessage('blc-ticket-message', '<span class="blc-spinner"></span> Processing your order...', 'loading');
 
@@ -137,7 +158,7 @@
                     body: JSON.stringify({
                         buyer_name: name,
                         buyer_email: email,
-                        quantity: 1
+                        quantity: quantity
                     })
                 })
                 .then(function (r) { return r.json(); })
@@ -362,6 +383,7 @@
     // ========================================================================
     function init() {
         initCountdown();
+        initQuantitySelector();
         initTicketPayPal();
         initDonationPayPal();
         initDonationPresets();

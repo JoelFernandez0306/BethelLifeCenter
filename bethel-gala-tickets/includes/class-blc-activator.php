@@ -59,7 +59,7 @@ class BLC_Gala_Activator {
             'blc_gala_event_date'      => '2026-10-17 18:00:00',
             'blc_gala_total_tickets'   => 100,
             'blc_gala_ticket_price'    => 50.00,
-            'blc_gala_max_per_order'   => 1,
+            'blc_gala_max_per_order'   => 10,
             'blc_gala_paypal_client_id'    => '',
             'blc_gala_paypal_secret'       => '',
             'blc_gala_paypal_sandbox'      => 1,
