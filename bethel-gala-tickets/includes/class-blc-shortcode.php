@@ -172,7 +172,15 @@ class BLC_Gala_Shortcode {
                     </div>
                     <div class="blc-form-group">
                         <label for="blc-ticket-quantity">Number of Tickets <span class="blc-required">*</span></label>
-                        <input type="number" id="blc-ticket-quantity" name="quantity" value="1" min="1" max="<?php echo esc_attr( (int) get_option( 'blc_gala_max_per_order', 10 ) ); ?>" required />
+                        <select id="blc-ticket-quantity" name="quantity" required>
+                            <?php
+                            $max_per_order = (int) get_option( 'blc_gala_max_per_order', 10 );
+                            for ( $i = 1; $i <= $max_per_order; $i++ ) :
+                                $label = $i . ' ' . ( $i === 1 ? 'ticket' : 'tickets' ) . ' — $' . number_format( $price * $i, 2 );
+                            ?>
+                                <option value="<?php echo esc_attr( $i ); ?>"><?php echo esc_html( $label ); ?></option>
+                            <?php endfor; ?>
+                        </select>
                         <p class="blc-form-total">Total: <strong id="blc-ticket-total">$<?php echo esc_html( number_format( $price, 2 ) ); ?></strong></p>
                     </div>
 
