@@ -115,7 +115,7 @@ class BLC_Gala_Shortcode {
                 <?php
                 $address = get_option( 'blc_gala_event_address', '' );
                 if ( $address ) : ?>
-                    <p class="blc-gala-address"><?php echo nl2br( esc_html( $address ) ); ?></p>
+                    <p class="blc-gala-date"><?php echo nl2br( esc_html( $address ) ); ?></p>
                 <?php endif; ?>
                 <?php if ( $formatted_date ) : ?>
                     <p class="blc-gala-date"><?php echo esc_html( $formatted_date ); ?></p>

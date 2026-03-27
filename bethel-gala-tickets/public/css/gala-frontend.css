@@ -47,16 +47,6 @@
     font-style: italic;
 }
 
-.blc-gala-wrapper .blc-gala-hero p.blc-gala-address,
-p.blc-gala-address {
-    font-size: 1.6em !important;
-    color: var(--blc-accent) !important;
-    margin: 10px 0 0 !important;
-    line-height: 1.4 !important;
-    font-weight: 600 !important;
-    opacity: 1 !important;
-}
-
 .blc-gala-date {
     font-size: 1.1em;
     color: var(--blc-accent) !important;
