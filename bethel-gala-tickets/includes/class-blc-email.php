@@ -14,8 +14,9 @@ class BLC_Gala_Email {
         $event_name = get_option( 'blc_gala_event_name', 'Always on Mission Gala 2026' );
         $event_date = get_option( 'blc_gala_event_date', '' );
         $tagline    = get_option( 'blc_gala_event_tagline', 'Hosted by Bethel Life Center' );
-        $accent     = get_option( 'blc_gala_accent_color', '#C9A84C' );
-        $secondary  = get_option( 'blc_gala_secondary_color', '#1B2A4A' );
+        $accent       = get_option( 'blc_gala_accent_color', '#C9A84C' );
+        $secondary    = get_option( 'blc_gala_secondary_color', '#1B2A4A' );
+        $address_text = get_option( 'blc_gala_event_address', '' );
 
         $formatted_date = '';
         if ( $event_date ) {
@@ -62,9 +63,10 @@ class BLC_Gala_Email {
                 We are excited to have you join us for this special evening.
             </p>
 
-            ' . ( $formatted_date ? '<p style="font-size: 16px; color: #333; background: #f9f6ee; padding: 15px; border-radius: 6px; text-align: center;">
-                <strong>Date:</strong> ' . esc_html( $formatted_date ) . '
-            </p>' : '' ) . '
+            ' . ( $formatted_date || $address_text ? '<div style="font-size: 16px; color: #333; background: #f9f6ee; padding: 15px; border-radius: 6px; text-align: center;">'
+                . ( $formatted_date ? '<p style="margin: 0 0 5px;"><strong>Date:</strong> ' . esc_html( $formatted_date ) . '</p>' : '' )
+                . ( $address_text ? '<p style="margin: 0;"><strong>Location:</strong> ' . esc_html( str_replace( "\n", ', ', $address_text ) ) . '</p>' : '' )
+            . '</div>' : '' ) . '
 
             <h2 style="color: ' . esc_attr( $secondary ) . '; border-bottom: 2px solid ' . esc_attr( $accent ) . '; padding-bottom: 10px;">Your Ticket(s)</h2>
             <p style="font-size: 14px; color: #666;">Please show the QR code below when you arrive at the event. You may display it on your phone or print this email.</p>

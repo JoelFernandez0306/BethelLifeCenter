@@ -47,6 +47,13 @@
     font-style: italic;
 }
 
+.blc-gala-address {
+    font-size: 1em;
+    color: #d0d0d0 !important;
+    margin: 8px 0 0 !important;
+    line-height: 1.5;
+}
+
 .blc-gala-date {
     font-size: 1.1em;
     color: var(--blc-accent) !important;

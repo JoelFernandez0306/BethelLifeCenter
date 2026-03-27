@@ -52,6 +52,7 @@ class BLC_Gala_Admin {
         // Event settings
         register_setting( 'blc_gala_settings', 'blc_gala_event_name', array( 'sanitize_callback' => 'sanitize_text_field' ) );
         register_setting( 'blc_gala_settings', 'blc_gala_event_tagline', array( 'sanitize_callback' => 'sanitize_text_field' ) );
+        register_setting( 'blc_gala_settings', 'blc_gala_event_address', array( 'sanitize_callback' => 'sanitize_textarea_field' ) );
         register_setting( 'blc_gala_settings', 'blc_gala_event_date', array( 'sanitize_callback' => 'sanitize_text_field' ) );
         register_setting( 'blc_gala_settings', 'blc_gala_total_tickets', array( 'sanitize_callback' => 'absint' ) );
         register_setting( 'blc_gala_settings', 'blc_gala_ticket_price', array( 'sanitize_callback' => 'floatval' ) );

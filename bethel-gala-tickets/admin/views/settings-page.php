@@ -37,6 +37,11 @@
                 <td><input type="text" id="blc_gala_event_tagline" name="blc_gala_event_tagline" value="<?php echo esc_attr( get_option( 'blc_gala_event_tagline' ) ); ?>" class="regular-text" /></td>
             </tr>
             <tr>
+                <th><label for="blc_gala_event_address">Event Address</label></th>
+                <td><textarea id="blc_gala_event_address" name="blc_gala_event_address" rows="2" class="regular-text"><?php echo esc_textarea( get_option( 'blc_gala_event_address', '' ) ); ?></textarea>
+                <p class="description">Displayed below the tagline in the hero section.</p></td>
+            </tr>
+            <tr>
                 <th><label for="blc_gala_event_date">Event Date &amp; Time</label></th>
                 <td><input type="datetime-local" id="blc_gala_event_date" name="blc_gala_event_date" value="<?php echo esc_attr( str_replace( ' ', 'T', get_option( 'blc_gala_event_date' ) ) ); ?>" /></td>
             </tr>

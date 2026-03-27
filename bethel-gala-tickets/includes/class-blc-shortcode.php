@@ -112,6 +112,11 @@ class BLC_Gala_Shortcode {
             <div class="blc-gala-hero">
                 <h1 class="blc-gala-title"><?php echo esc_html( $event_name ); ?></h1>
                 <p class="blc-gala-tagline"><?php echo esc_html( $tagline ); ?></p>
+                <?php
+                $address = get_option( 'blc_gala_event_address', '' );
+                if ( $address ) : ?>
+                    <p class="blc-gala-address"><?php echo nl2br( esc_html( $address ) ); ?></p>
+                <?php endif; ?>
                 <?php if ( $formatted_date ) : ?>
                     <p class="blc-gala-date"><?php echo esc_html( $formatted_date ); ?></p>
                 <?php endif; ?>

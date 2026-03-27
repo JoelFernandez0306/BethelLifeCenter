@@ -56,6 +56,7 @@ class BLC_Gala_Activator {
         $defaults = array(
             'blc_gala_event_name'      => 'Always on Mission Gala 2026',
             'blc_gala_event_tagline'   => 'Hosted by Bethel Life Center',
+            'blc_gala_event_address'   => "109 Club House Court\nEast Stroudsburg, PA 18335",
             'blc_gala_event_date'      => '2026-10-17 18:00:00',
             'blc_gala_total_tickets'   => 100,
             'blc_gala_ticket_price'    => 50.00,
