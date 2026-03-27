@@ -48,10 +48,10 @@
 }
 
 .blc-gala-address {
-    font-size: 1em;
-    color: #d0d0d0 !important;
-    margin: 8px 0 0 !important;
-    line-height: 1.5;
+    font-size: 1.4em;
+    color: var(--blc-accent) !important;
+    margin: 10px 0 0 !important;
+    line-height: 1.4;
 }
 
 .blc-gala-date {
