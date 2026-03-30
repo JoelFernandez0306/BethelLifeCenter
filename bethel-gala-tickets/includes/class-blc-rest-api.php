@@ -80,6 +80,13 @@ class BLC_Gala_REST_API {
             'permission_callback' => array( $this, 'check_scanner_token' ),
         ) );
 
+        // Admin: resend ticket email
+        register_rest_route( $namespace, '/resend-email/(?P<order_id>\d+)', array(
+            'methods'             => 'POST',
+            'callback'            => array( $this, 'resend_email' ),
+            'permission_callback' => array( $this, 'check_admin_permission' ),
+        ) );
+
         // Admin: test PayPal connection
         register_rest_route( $namespace, '/test-paypal', array(
             'methods'             => 'POST',
@@ -469,6 +476,40 @@ class BLC_Gala_REST_API {
     /**
      * POST /test-paypal — test PayPal API credentials.
      */
+    /**
+     * POST /resend-email/{order_id} — resend ticket confirmation email.
+     */
+    public function resend_email( $request ) {
+        $order_id    = absint( $request->get_param( 'order_id' ) );
+        $tickets_mgr = new BLC_Gala_Tickets();
+        $data        = $tickets_mgr->get_order_with_tickets( $order_id );
+
+        if ( is_wp_error( $data ) ) {
+            return $data;
+        }
+
+        $order = $data['order'];
+
+        if ( $order->status !== 'completed' ) {
+            return new WP_Error( 'not_completed', 'Can only resend emails for completed orders.', array( 'status' => 400 ) );
+        }
+
+        $email = new BLC_Gala_Email();
+
+        if ( $order->order_type === 'ticket' && ! empty( $data['tickets'] ) ) {
+            $email->send_ticket_email( $order, $data['tickets'] );
+        } elseif ( $order->order_type === 'donation' ) {
+            $email->send_donation_email( $order );
+        } else {
+            return new WP_Error( 'no_tickets', 'No tickets found for this order.', array( 'status' => 400 ) );
+        }
+
+        return rest_ensure_response( array(
+            'success' => true,
+            'message' => 'Email resent to ' . $order->buyer_email,
+        ) );
+    }
+
     public function test_paypal( $request ) {
         $paypal    = new BLC_Gala_PayPal();
         $client_id = trim( get_option( 'blc_gala_paypal_client_id', '' ) );

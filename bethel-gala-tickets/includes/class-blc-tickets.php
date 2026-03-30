@@ -266,4 +266,38 @@ class BLC_Gala_Tickets {
 
         return $wpdb->get_results( $query );
     }
+
+    /**
+     * Get an order by ID, including its tickets.
+     */
+    public function get_order_with_tickets( $order_id ) {
+        global $wpdb;
+
+        $order = $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM {$this->orders_table} WHERE id = %d",
+            $order_id
+        ) );
+
+        if ( ! $order ) {
+            return new WP_Error( 'not_found', 'Order not found.', array( 'status' => 404 ) );
+        }
+
+        $tickets = $wpdb->get_results( $wpdb->prepare(
+            "SELECT * FROM {$this->tickets_table} WHERE order_id = %d",
+            $order_id
+        ) );
+
+        $ticket_data = array();
+        foreach ( $tickets as $t ) {
+            $ticket_data[] = array(
+                'ticket_id'   => $t->id,
+                'ticket_code' => $t->ticket_code,
+            );
+        }
+
+        return array(
+            'order'   => $order,
+            'tickets' => $ticket_data,
+        );
+    }
 }

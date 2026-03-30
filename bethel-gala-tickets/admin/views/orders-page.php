@@ -37,11 +37,12 @@
                 <th>Status</th>
                 <th>Ticket Codes</th>
                 <th>Checked In</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
             <?php if ( empty( $orders ) ) : ?>
-                <tr><td colspan="9">No orders found.</td></tr>
+                <tr><td colspan="10">No orders found.</td></tr>
             <?php else : ?>
                 <?php foreach ( $orders as $order ) : ?>
                     <tr>
@@ -64,9 +65,54 @@
                             }
                             ?>
                         </td>
+                        <td>
+                            <?php if ( $order->status === 'completed' ) : ?>
+                                <button type="button" class="button blc-resend-btn" data-order-id="<?php echo esc_attr( $order->id ); ?>" data-email="<?php echo esc_attr( $order->buyer_email ); ?>">Resend Email</button>
+                            <?php else : ?>
+                                —
+                            <?php endif; ?>
+                        </td>
                     </tr>
                 <?php endforeach; ?>
             <?php endif; ?>
         </tbody>
     </table>
 </div>
+
+<script>
+(function($) {
+    $('.blc-resend-btn').on('click', function() {
+        var btn = $(this);
+        var orderId = btn.data('order-id');
+        var email = btn.data('email');
+
+        if (!confirm('Resend ticket email to ' + email + '?')) return;
+
+        btn.prop('disabled', true).text('Sending...');
+
+        $.ajax({
+            url: blcGalaAdmin.restUrl + 'resend-email/' + orderId,
+            method: 'POST',
+            headers: { 'X-WP-Nonce': blcGalaAdmin.nonce },
+            contentType: 'application/json',
+            data: '{}',
+            success: function(data) {
+                if (data.success) {
+                    btn.text('Sent!').css('color', '#0a7c00');
+                    setTimeout(function() {
+                        btn.prop('disabled', false).text('Resend Email').css('color', '');
+                    }, 3000);
+                } else {
+                    alert(data.message || 'Failed to resend.');
+                    btn.prop('disabled', false).text('Resend Email');
+                }
+            },
+            error: function(xhr) {
+                var msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Failed to resend.';
+                alert(msg);
+                btn.prop('disabled', false).text('Resend Email');
+            }
+        });
+    });
+})(jQuery);
+</script>
