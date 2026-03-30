@@ -86,6 +86,20 @@ class BLC_Gala_REST_API {
             'callback'            => array( $this, 'test_paypal' ),
             'permission_callback' => array( $this, 'check_admin_permission' ),
         ) );
+
+        // Public: verify admin PIN for cash/check
+        register_rest_route( $namespace, '/admin-auth', array(
+            'methods'             => 'POST',
+            'callback'            => array( $this, 'admin_auth' ),
+            'permission_callback' => '__return_true',
+        ) );
+
+        // Public: process cash/check order (requires admin token)
+        register_rest_route( $namespace, '/cash-check-order', array(
+            'methods'             => 'POST',
+            'callback'            => array( $this, 'cash_check_order' ),
+            'permission_callback' => array( $this, 'check_admin_token' ),
+        ) );
     }
 
     /**
@@ -129,11 +143,19 @@ class BLC_Gala_REST_API {
             return $order_data;
         }
 
-        // Create PayPal order
+        // Calculate total with PayPal fee
+        $fee_rate     = (float) get_option( 'blc_gala_paypal_fee_rate', 2.99 ) / 100;
+        $fee_fixed    = (float) get_option( 'blc_gala_paypal_fee_fixed', 0.49 );
+        $subtotal     = $order_data['amount'];
+        $charge_total = ( $fee_rate > 0 || $fee_fixed > 0 )
+            ? round( ( $subtotal + $fee_fixed ) / ( 1 - $fee_rate ), 2 )
+            : $subtotal;
+
+        // Create PayPal order with fee-inclusive amount
         $paypal       = new BLC_Gala_PayPal();
         $event_name   = get_option( 'blc_gala_event_name', 'Always on Mission Gala 2026' );
         $description  = $event_name . ' — Ticket';
-        $paypal_order = $paypal->create_order( $order_data['order_uuid'], $order_data['amount'], $description );
+        $paypal_order = $paypal->create_order( $order_data['order_uuid'], $charge_total, $description );
 
         if ( is_wp_error( $paypal_order ) ) {
             // Clean up the pending order
@@ -230,10 +252,18 @@ class BLC_Gala_REST_API {
             return $order_data;
         }
 
+        // Calculate total with PayPal fee for donation
+        $fee_rate     = (float) get_option( 'blc_gala_paypal_fee_rate', 2.99 ) / 100;
+        $fee_fixed    = (float) get_option( 'blc_gala_paypal_fee_fixed', 0.49 );
+        $don_subtotal = $order_data['amount'];
+        $don_charge   = ( $fee_rate > 0 || $fee_fixed > 0 )
+            ? round( ( $don_subtotal + $fee_fixed ) / ( 1 - $fee_rate ), 2 )
+            : $don_subtotal;
+
         $paypal      = new BLC_Gala_PayPal();
         $event_name  = get_option( 'blc_gala_event_name', 'Always on Mission Gala 2026' );
         $description = 'Donation — ' . $event_name;
-        $paypal_order = $paypal->create_order( $order_data['order_uuid'], $order_data['amount'], $description );
+        $paypal_order = $paypal->create_order( $order_data['order_uuid'], $don_charge, $description );
 
         if ( is_wp_error( $paypal_order ) ) {
             global $wpdb;
@@ -339,6 +369,100 @@ class BLC_Gala_REST_API {
             'is_checked_in' => (bool) $ticket->is_checked_in,
             'checked_in_at' => $ticket->checked_in_at,
             'order_status'  => $ticket->order_status,
+        ) );
+    }
+
+    /**
+     * POST /admin-auth — verify admin PIN for cash/check payments.
+     */
+    public function admin_auth( $request ) {
+        $params = $request->get_json_params();
+        $pin    = isset( $params['pin'] ) ? sanitize_text_field( $params['pin'] ) : '';
+
+        $stored_pin = get_option( 'blc_gala_admin_pin', '' );
+
+        if ( empty( $stored_pin ) || $pin !== $stored_pin ) {
+            return new WP_Error( 'invalid_pin', 'Incorrect admin code.', array( 'status' => 401 ) );
+        }
+
+        $token = wp_hash( $stored_pin . '|admin|' . date( 'Y-m-d' ) );
+
+        return rest_ensure_response( array(
+            'token' => $token,
+        ) );
+    }
+
+    /**
+     * Permission callback for admin token (cash/check).
+     */
+    public function check_admin_token( $request ) {
+        if ( current_user_can( 'manage_options' ) ) {
+            return true;
+        }
+
+        $token = $request->get_header( 'X-BLC-Admin-Token' );
+        if ( empty( $token ) ) {
+            return new WP_Error( 'missing_token', 'Admin authentication required.', array( 'status' => 401 ) );
+        }
+
+        $stored_pin     = get_option( 'blc_gala_admin_pin', '' );
+        $expected_token = wp_hash( $stored_pin . '|admin|' . date( 'Y-m-d' ) );
+
+        if ( ! hash_equals( $expected_token, $token ) ) {
+            return new WP_Error( 'invalid_token', 'Admin token expired or invalid.', array( 'status' => 401 ) );
+        }
+
+        return true;
+    }
+
+    /**
+     * POST /cash-check-order — process a cash or check ticket order.
+     */
+    public function cash_check_order( $request ) {
+        $params = $request->get_json_params();
+
+        $buyer_name    = isset( $params['buyer_name'] ) ? sanitize_text_field( $params['buyer_name'] ) : '';
+        $buyer_email   = isset( $params['buyer_email'] ) ? sanitize_email( $params['buyer_email'] ) : '';
+        $quantity      = isset( $params['quantity'] ) ? absint( $params['quantity'] ) : 1;
+        $payment_method = isset( $params['payment_method'] ) ? sanitize_text_field( $params['payment_method'] ) : 'cash';
+        $check_number  = isset( $params['check_number'] ) ? sanitize_text_field( $params['check_number'] ) : '';
+
+        if ( empty( $buyer_name ) || empty( $buyer_email ) ) {
+            return new WP_Error( 'missing_fields', 'Name and email are required.', array( 'status' => 400 ) );
+        }
+
+        if ( ! is_email( $buyer_email ) ) {
+            return new WP_Error( 'invalid_email', 'Please provide a valid email address.', array( 'status' => 400 ) );
+        }
+
+        // Reserve tickets
+        $tickets_mgr = new BLC_Gala_Tickets();
+        $order_data  = $tickets_mgr->reserve_ticket( $buyer_name, $buyer_email, $quantity );
+
+        if ( is_wp_error( $order_data ) ) {
+            return $order_data;
+        }
+
+        // Immediately complete the order (no PayPal needed)
+        $payment_ref = strtoupper( $payment_method );
+        if ( $payment_method === 'check' && $check_number ) {
+            $payment_ref = 'CHECK-' . $check_number;
+        }
+
+        $completed = $tickets_mgr->complete_order( $order_data['order_uuid'], $payment_ref, $payment_ref );
+
+        if ( is_wp_error( $completed ) ) {
+            return $completed;
+        }
+
+        // Send confirmation email with QR codes
+        $email = new BLC_Gala_Email();
+        $email->send_ticket_email( $completed['order'], $completed['tickets'] );
+
+        return rest_ensure_response( array(
+            'success' => true,
+            'message' => 'Cash/check payment recorded. ' . count( $completed['tickets'] ) . ' ticket(s) sent to ' . $buyer_email,
+            'tickets' => count( $completed['tickets'] ),
         ) );
     }
 

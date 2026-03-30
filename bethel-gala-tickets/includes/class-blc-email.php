@@ -27,7 +27,10 @@ class BLC_Gala_Email {
         $tickets_html = '';
         foreach ( $tickets as $ticket ) {
             $qr_data = $ticket['ticket_code'];
-            $qr_img  = $qr_gen->generate_base64_png( $qr_data, 250 );
+            $qr_img  = $qr_gen->save_qr_to_file( $qr_data, 'ticket-' . $ticket['ticket_code'] . '.png' );
+            if ( is_wp_error( $qr_img ) ) {
+                $qr_img = $qr_gen->generate_base64_png( $qr_data, 250 );
+            }
             $tickets_html .= '
             <div style="text-align: center; margin: 20px 0; padding: 20px; border: 2px dashed ' . esc_attr( $accent ) . '; border-radius: 10px;">
                 <p style="font-size: 14px; color: #666; margin: 0 0 10px;">Ticket Code: <strong>' . esc_html( $ticket['ticket_code'] ) . '</strong></p>

@@ -77,6 +77,8 @@ class BLC_Gala_Shortcode {
             'soldOut'       => $tickets_mgr->is_sold_out(),
             'donationEnabled' => (bool) get_option( 'blc_gala_donation_enabled', 1 ),
             'paypalConfigured' => $paypal->is_configured(),
+            'feeRate'       => (float) get_option( 'blc_gala_paypal_fee_rate', 2.99 ),
+            'feeFixed'      => (float) get_option( 'blc_gala_paypal_fee_fixed', 0.49 ),
             'accentColor'   => get_option( 'blc_gala_accent_color', '#C9A84C' ),
             'secondaryColor' => get_option( 'blc_gala_secondary_color', '#1B2A4A' ),
         ) );
@@ -187,7 +189,11 @@ class BLC_Gala_Shortcode {
                                 <option value="<?php echo esc_attr( $i ); ?>"><?php echo esc_html( $label ); ?></option>
                             <?php endfor; ?>
                         </select>
-                        <p class="blc-form-total">Total: <strong id="blc-ticket-total">$<?php echo esc_html( number_format( $price, 2 ) ); ?></strong></p>
+                        <div class="blc-form-total">
+                            <div>Subtotal: <strong id="blc-ticket-total">$<?php echo esc_html( number_format( $price, 2 ) ); ?></strong></div>
+                            <div class="blc-fee-line">PayPal Transaction Fee: <strong id="blc-ticket-fee">$0.00</strong></div>
+                            <div class="blc-grand-total">Total: <strong id="blc-ticket-grand-total">$<?php echo esc_html( number_format( $price, 2 ) ); ?></strong></div>
+                        </div>
                     </div>
 
                     <div id="blc-paypal-button-container" class="blc-paypal-buttons"></div>
@@ -198,6 +204,98 @@ class BLC_Gala_Shortcode {
 
                     <div id="blc-ticket-message" class="blc-message" style="display: none;"></div>
                 </form>
+
+                <div class="blc-cashcheck-wrapper" style="margin-top: 20px; text-align: center;">
+                    <button type="button" id="blc-cashcheck-btn" class="blc-cashcheck-trigger">
+                        Cash / Check
+                        <span class="blc-cashcheck-sub">For Admin Use Only</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Cash/Check Modal -->
+            <div id="blc-cashcheck-overlay" class="blc-modal-overlay" style="display: none;">
+                <div class="blc-modal">
+                    <!-- Step 1: PIN -->
+                    <div id="blc-cc-step-pin" class="blc-cc-step">
+                        <h3>Admin Verification</h3>
+                        <p>Enter the admin code to continue.</p>
+                        <input type="password" id="blc-cc-pin" placeholder="Admin Code" maxlength="8" inputmode="numeric" autocomplete="off" />
+                        <div class="blc-modal-actions">
+                            <button type="button" class="blc-modal-btn blc-modal-btn-cancel" id="blc-cc-cancel-pin">Cancel</button>
+                            <button type="button" class="blc-modal-btn blc-modal-btn-primary" id="blc-cc-verify-pin">Verify</button>
+                        </div>
+                        <div id="blc-cc-pin-msg" class="blc-message" style="display: none;"></div>
+                    </div>
+                    <!-- Step 2: Payment Method -->
+                    <div id="blc-cc-step-method" class="blc-cc-step" style="display: none;">
+                        <h3>Payment Method</h3>
+                        <div class="blc-cc-method-btns">
+                            <button type="button" class="blc-modal-btn blc-modal-btn-primary blc-cc-method-btn" data-method="cash">Cash</button>
+                            <button type="button" class="blc-modal-btn blc-modal-btn-primary blc-cc-method-btn" data-method="check">Check</button>
+                        </div>
+                        <div id="blc-cc-check-field" style="display: none; margin-top: 15px;">
+                            <label for="blc-cc-check-number">Check Number <span class="blc-required">*</span></label>
+                            <input type="text" id="blc-cc-check-number" placeholder="Enter check number" />
+                        </div>
+                        <div class="blc-modal-actions" style="margin-top: 15px;">
+                            <button type="button" class="blc-modal-btn blc-modal-btn-cancel" id="blc-cc-cancel-method">Cancel</button>
+                            <button type="button" class="blc-modal-btn blc-modal-btn-primary" id="blc-cc-next-info" style="display: none;">Next</button>
+                        </div>
+                    </div>
+                    <!-- Step 3: Buyer Info -->
+                    <div id="blc-cc-step-info" class="blc-cc-step" style="display: none;">
+                        <h3>Buyer Information</h3>
+                        <div class="blc-form-group">
+                            <label>First Name <span class="blc-required">*</span></label>
+                            <input type="text" id="blc-cc-fname" placeholder="First name" />
+                        </div>
+                        <div class="blc-form-group">
+                            <label>Last Name <span class="blc-required">*</span></label>
+                            <input type="text" id="blc-cc-lname" placeholder="Last name" />
+                        </div>
+                        <div class="blc-form-group">
+                            <label>Email <span class="blc-required">*</span></label>
+                            <input type="email" id="blc-cc-email" placeholder="Email address" />
+                        </div>
+                        <div class="blc-form-group">
+                            <label>Number of Tickets <span class="blc-required">*</span></label>
+                            <select id="blc-cc-quantity">
+                                <?php for ( $i = 1; $i <= $max_per_order; $i++ ) : ?>
+                                    <option value="<?php echo esc_attr( $i ); ?>"><?php echo esc_html( $i . ' ' . ( $i === 1 ? 'ticket' : 'tickets' ) . ' — $' . number_format( $price * $i, 2 ) ); ?></option>
+                                <?php endfor; ?>
+                            </select>
+                        </div>
+                        <div class="blc-modal-actions">
+                            <button type="button" class="blc-modal-btn blc-modal-btn-cancel" id="blc-cc-back-method">Back</button>
+                            <button type="button" class="blc-modal-btn blc-modal-btn-primary" id="blc-cc-next-review">Review</button>
+                        </div>
+                        <div id="blc-cc-info-msg" class="blc-message" style="display: none;"></div>
+                    </div>
+                    <!-- Step 4: Review -->
+                    <div id="blc-cc-step-review" class="blc-cc-step" style="display: none;">
+                        <h3>Review Order</h3>
+                        <table class="blc-cc-review-table">
+                            <tr><td><strong>Name:</strong></td><td id="blc-cc-review-name"></td></tr>
+                            <tr><td><strong>Email:</strong></td><td id="blc-cc-review-email"></td></tr>
+                            <tr><td><strong>Tickets:</strong></td><td id="blc-cc-review-qty"></td></tr>
+                            <tr><td><strong>Amount:</strong></td><td id="blc-cc-review-amount"></td></tr>
+                            <tr><td><strong>Payment:</strong></td><td id="blc-cc-review-method"></td></tr>
+                        </table>
+                        <div class="blc-modal-actions">
+                            <button type="button" class="blc-modal-btn blc-modal-btn-cancel" id="blc-cc-back-info">Back</button>
+                            <button type="button" class="blc-modal-btn blc-modal-btn-primary" id="blc-cc-confirm">Complete Payment</button>
+                        </div>
+                        <div id="blc-cc-review-msg" class="blc-message" style="display: none;"></div>
+                    </div>
+                    <!-- Step 5: Done -->
+                    <div id="blc-cc-step-done" class="blc-cc-step" style="display: none;">
+                        <div id="blc-cc-done-msg" class="blc-message blc-success" style="display: block;"></div>
+                        <div class="blc-modal-actions">
+                            <button type="button" class="blc-modal-btn blc-modal-btn-primary" id="blc-cc-done-close">Close</button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Sold Out Section -->

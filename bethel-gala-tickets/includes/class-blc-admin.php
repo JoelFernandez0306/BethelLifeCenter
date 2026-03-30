@@ -65,6 +65,11 @@ class BLC_Gala_Admin {
 
         // Scanner settings
         register_setting( 'blc_gala_settings', 'blc_gala_scanner_pin', array( 'sanitize_callback' => 'sanitize_text_field' ) );
+        register_setting( 'blc_gala_settings', 'blc_gala_admin_pin', array( 'sanitize_callback' => 'sanitize_text_field' ) );
+
+        // Fee settings
+        register_setting( 'blc_gala_settings', 'blc_gala_paypal_fee_rate', array( 'sanitize_callback' => 'floatval' ) );
+        register_setting( 'blc_gala_settings', 'blc_gala_paypal_fee_fixed', array( 'sanitize_callback' => 'floatval' ) );
 
         // Display settings
         register_setting( 'blc_gala_settings', 'blc_gala_donation_enabled', array( 'sanitize_callback' => 'absint' ) );

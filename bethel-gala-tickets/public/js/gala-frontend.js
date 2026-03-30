@@ -1,6 +1,6 @@
 /**
  * Always on Mission Gala — Frontend JavaScript
- * Handles: countdown timer, live ticket counter, PayPal buttons, donation form.
+ * Handles: countdown timer, live ticket counter, PayPal buttons, donation form, cash/check modal.
  */
 (function () {
     'use strict';
@@ -8,16 +8,31 @@
     var config = window.blcGala || {};
 
     // ========================================================================
+    // Fee Calculation
+    // ========================================================================
+    var feeRate = (config.feeRate || 0) / 100;
+    var feeFixed = config.feeFixed || 0;
+
+    function calculateFee(subtotal) {
+        if (feeRate <= 0 && feeFixed <= 0) return 0;
+        // Formula: total = (subtotal + fixed) / (1 - rate)
+        // fee = total - subtotal
+        var total = (subtotal + feeFixed) / (1 - feeRate);
+        return Math.round((total - subtotal) * 100) / 100;
+    }
+
+    function calculateTotalWithFee(subtotal) {
+        return Math.round((subtotal + calculateFee(subtotal)) * 100) / 100;
+    }
+
+    // ========================================================================
     // Countdown Timer
     // ========================================================================
     function initCountdown() {
         if (!config.eventDate) return;
 
-        // Normalize the date string — handle both "2026-10-17 18:00:00" and "2026-10-17T18:00:00"
         var dateStr = config.eventDate.replace(' ', 'T');
-        // Ensure it parses correctly by appending timezone if missing
         if (dateStr.indexOf('Z') === -1 && dateStr.indexOf('+') === -1 && dateStr.indexOf('-', 10) === -1) {
-            // No timezone info — treat as local time
         }
         var target = new Date(dateStr).getTime();
         if (isNaN(target)) return;
@@ -94,20 +109,28 @@
     }
 
     // ========================================================================
-    // Quantity Selector + Dynamic Total
+    // Quantity Selector + Dynamic Total with Fee
     // ========================================================================
     function initQuantitySelector() {
         var select = document.getElementById('blc-ticket-quantity');
         var totalEl = document.getElementById('blc-ticket-total');
+        var feeEl = document.getElementById('blc-ticket-fee');
+        var grandEl = document.getElementById('blc-ticket-grand-total');
         if (!select || !totalEl) return;
 
         function updateTotal() {
             var qty = parseInt(select.value) || 1;
-            var total = (qty * config.price).toFixed(2);
-            totalEl.textContent = '$' + total;
+            var subtotal = qty * config.price;
+            var fee = calculateFee(subtotal);
+            var grand = subtotal + fee;
+
+            totalEl.textContent = '$' + subtotal.toFixed(2);
+            if (feeEl) feeEl.textContent = '$' + fee.toFixed(2);
+            if (grandEl) grandEl.textContent = '$' + grand.toFixed(2);
         }
 
         select.addEventListener('change', updateTotal);
+        updateTotal();
     }
 
     function getSelectedQuantity() {
@@ -137,7 +160,6 @@
                 label: 'pay'
             },
 
-            // Validate form before allowing PayPal to open
             onClick: function (data, actions) {
                 var fname = document.getElementById('blc-ticket-fname');
                 var lname = document.getElementById('blc-ticket-lname');
@@ -184,7 +206,6 @@
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
                     if (data.paypal_order_id) {
-                        // Store order UUID for capture step
                         container.dataset.orderUuid = data.order_uuid;
                         return data.paypal_order_id;
                     }
@@ -212,12 +233,10 @@
                 .then(function (result) {
                     if (result.success) {
                         showMessage('blc-ticket-message', result.message, 'success');
-                        // Refresh the counter
                         pollTicketCount();
-                        // Hide the form
                         var form = document.getElementById('blc-gala-ticket-form');
                         if (form) {
-                            var inputs = form.querySelectorAll('input');
+                            var inputs = form.querySelectorAll('input, select');
                             inputs.forEach(function (i) { i.disabled = true; });
                         }
                         container.innerHTML = '';
@@ -389,6 +408,209 @@
     }
 
     // ========================================================================
+    // Cash/Check Modal
+    // ========================================================================
+    var ccAdminToken = null;
+    var ccPaymentMethod = '';
+
+    function initCashCheck() {
+        var triggerBtn = document.getElementById('blc-cashcheck-btn');
+        var overlay = document.getElementById('blc-cashcheck-overlay');
+        if (!triggerBtn || !overlay) return;
+
+        function showStep(stepId) {
+            overlay.querySelectorAll('.blc-cc-step').forEach(function (s) { s.style.display = 'none'; });
+            document.getElementById(stepId).style.display = 'block';
+        }
+
+        function closeModal() {
+            overlay.style.display = 'none';
+            ccPaymentMethod = '';
+            // Reset fields
+            var pin = document.getElementById('blc-cc-pin');
+            if (pin) pin.value = '';
+            document.getElementById('blc-cc-fname').value = '';
+            document.getElementById('blc-cc-lname').value = '';
+            document.getElementById('blc-cc-email').value = '';
+            var chk = document.getElementById('blc-cc-check-number');
+            if (chk) chk.value = '';
+            var qty = document.getElementById('blc-cc-quantity');
+            if (qty) qty.selectedIndex = 0;
+            overlay.querySelectorAll('.blc-message').forEach(function (m) { m.style.display = 'none'; });
+            overlay.querySelectorAll('.blc-cc-method-btn').forEach(function (b) { b.classList.remove('active'); });
+            document.getElementById('blc-cc-check-field').style.display = 'none';
+            document.getElementById('blc-cc-next-info').style.display = 'none';
+        }
+
+        // Open modal
+        triggerBtn.addEventListener('click', function () {
+            overlay.style.display = 'flex';
+            if (ccAdminToken) {
+                showStep('blc-cc-step-method');
+            } else {
+                showStep('blc-cc-step-pin');
+                document.getElementById('blc-cc-pin').focus();
+            }
+        });
+
+        // Cancel buttons
+        document.getElementById('blc-cc-cancel-pin').addEventListener('click', closeModal);
+        document.getElementById('blc-cc-cancel-method').addEventListener('click', closeModal);
+
+        // Step 1: Verify PIN
+        document.getElementById('blc-cc-verify-pin').addEventListener('click', function () {
+            var pin = document.getElementById('blc-cc-pin').value.trim();
+            if (!pin) return;
+
+            showMessage('blc-cc-pin-msg', 'Verifying...', 'loading');
+
+            fetch(config.restUrl + 'admin-auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pin: pin })
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.token) {
+                    ccAdminToken = data.token;
+                    hideMessage('blc-cc-pin-msg');
+                    showStep('blc-cc-step-method');
+                } else {
+                    showMessage('blc-cc-pin-msg', data.message || 'Incorrect code.', 'error');
+                }
+            })
+            .catch(function () {
+                showMessage('blc-cc-pin-msg', 'Connection error.', 'error');
+            });
+        });
+
+        // Allow Enter key on PIN
+        document.getElementById('blc-cc-pin').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') document.getElementById('blc-cc-verify-pin').click();
+        });
+
+        // Step 2: Select method
+        overlay.querySelectorAll('.blc-cc-method-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                overlay.querySelectorAll('.blc-cc-method-btn').forEach(function (b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                ccPaymentMethod = btn.dataset.method;
+
+                var checkField = document.getElementById('blc-cc-check-field');
+                checkField.style.display = ccPaymentMethod === 'check' ? 'block' : 'none';
+                document.getElementById('blc-cc-next-info').style.display = 'inline-block';
+            });
+        });
+
+        // Step 2 -> 3
+        document.getElementById('blc-cc-next-info').addEventListener('click', function () {
+            if (ccPaymentMethod === 'check') {
+                var checkNum = document.getElementById('blc-cc-check-number').value.trim();
+                if (!checkNum) {
+                    alert('Please enter the check number.');
+                    return;
+                }
+            }
+            showStep('blc-cc-step-info');
+        });
+
+        // Step 3 -> 2 (back)
+        document.getElementById('blc-cc-back-method').addEventListener('click', function () {
+            showStep('blc-cc-step-method');
+        });
+
+        // Step 3 -> 4 (review)
+        document.getElementById('blc-cc-next-review').addEventListener('click', function () {
+            var fname = document.getElementById('blc-cc-fname').value.trim();
+            var lname = document.getElementById('blc-cc-lname').value.trim();
+            var email = document.getElementById('blc-cc-email').value.trim();
+            var qty = parseInt(document.getElementById('blc-cc-quantity').value) || 1;
+
+            if (!fname) { showMessage('blc-cc-info-msg', 'First name is required.', 'error'); return; }
+            if (!lname) { showMessage('blc-cc-info-msg', 'Last name is required.', 'error'); return; }
+            if (!email || !isValidEmail(email)) { showMessage('blc-cc-info-msg', 'Valid email is required.', 'error'); return; }
+            hideMessage('blc-cc-info-msg');
+
+            var amount = (qty * config.price).toFixed(2);
+            var methodLabel = ccPaymentMethod === 'check'
+                ? 'Check #' + document.getElementById('blc-cc-check-number').value.trim()
+                : 'Cash';
+
+            document.getElementById('blc-cc-review-name').textContent = fname + ' ' + lname;
+            document.getElementById('blc-cc-review-email').textContent = email;
+            document.getElementById('blc-cc-review-qty').textContent = qty + ' ticket(s)';
+            document.getElementById('blc-cc-review-amount').textContent = '$' + amount;
+            document.getElementById('blc-cc-review-method').textContent = methodLabel;
+
+            showStep('blc-cc-step-review');
+        });
+
+        // Step 4 -> 3 (back)
+        document.getElementById('blc-cc-back-info').addEventListener('click', function () {
+            showStep('blc-cc-step-info');
+        });
+
+        // Step 4: Confirm
+        document.getElementById('blc-cc-confirm').addEventListener('click', function () {
+            var fname = document.getElementById('blc-cc-fname').value.trim();
+            var lname = document.getElementById('blc-cc-lname').value.trim();
+            var email = document.getElementById('blc-cc-email').value.trim();
+            var qty = parseInt(document.getElementById('blc-cc-quantity').value) || 1;
+            var checkNum = document.getElementById('blc-cc-check-number').value.trim();
+
+            showMessage('blc-cc-review-msg', '<span class="blc-spinner"></span> Processing...', 'loading');
+            document.getElementById('blc-cc-confirm').disabled = true;
+
+            fetch(config.restUrl + 'cash-check-order', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-BLC-Admin-Token': ccAdminToken
+                },
+                body: JSON.stringify({
+                    buyer_name: fname + ' ' + lname,
+                    buyer_email: email,
+                    quantity: qty,
+                    payment_method: ccPaymentMethod,
+                    check_number: checkNum
+                })
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                document.getElementById('blc-cc-confirm').disabled = false;
+                if (data.success) {
+                    document.getElementById('blc-cc-done-msg').textContent = data.message;
+                    showStep('blc-cc-step-done');
+                    pollTicketCount();
+                } else {
+                    showMessage('blc-cc-review-msg', data.message || 'Failed to process order.', 'error');
+                }
+            })
+            .catch(function () {
+                document.getElementById('blc-cc-confirm').disabled = false;
+                showMessage('blc-cc-review-msg', 'Connection error. Please try again.', 'error');
+            });
+        });
+
+        // Done: close
+        document.getElementById('blc-cc-done-close').addEventListener('click', function () {
+            closeModal();
+            showStep('blc-cc-step-pin');
+        });
+
+        // Close on overlay click
+        overlay.addEventListener('click', function (e) {
+            if (e.target === overlay) closeModal();
+        });
+    }
+
+    // ========================================================================
+    // Update PayPal order amount to include fees
+    // ========================================================================
+    // Override the create-order to pass the total with fee
+    // This is handled in the createOrder callback above via the server-side amount
+
+    // ========================================================================
     // Helpers
     // ========================================================================
     function showMessage(id, html, type) {
@@ -418,6 +640,7 @@
         initTicketPayPal();
         initDonationPayPal();
         initDonationPresets();
+        initCashCheck();
 
         // Poll ticket count every 30 seconds
         setInterval(pollTicketCount, 30000);

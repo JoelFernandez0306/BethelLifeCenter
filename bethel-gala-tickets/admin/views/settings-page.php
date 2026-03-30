@@ -86,6 +86,16 @@
                     <p class="description">Save settings first, then click to verify your PayPal credentials are working.</p>
                 </td>
             </tr>
+            <tr>
+                <th><label for="blc_gala_paypal_fee_rate">PayPal Fee Rate (%)</label></th>
+                <td><input type="number" id="blc_gala_paypal_fee_rate" name="blc_gala_paypal_fee_rate" value="<?php echo esc_attr( get_option( 'blc_gala_paypal_fee_rate', 2.99 ) ); ?>" min="0" step="0.01" class="small-text" />
+                <p class="description">PayPal's percentage fee per transaction. Standard: 2.99%, Nonprofit: 1.99%. This fee is passed to the buyer.</p></td>
+            </tr>
+            <tr>
+                <th><label for="blc_gala_paypal_fee_fixed">PayPal Fixed Fee ($)</label></th>
+                <td><input type="number" id="blc_gala_paypal_fee_fixed" name="blc_gala_paypal_fee_fixed" value="<?php echo esc_attr( get_option( 'blc_gala_paypal_fee_fixed', 0.49 ) ); ?>" min="0" step="0.01" class="small-text" />
+                <p class="description">PayPal's fixed fee per transaction (usually $0.49).</p></td>
+            </tr>
         </table>
 
         <h2>Donation Settings</h2>
@@ -119,6 +129,13 @@
                 <td>
                     <input type="text" id="blc_gala_scanner_pin" name="blc_gala_scanner_pin" value="<?php echo esc_attr( get_option( 'blc_gala_scanner_pin', '1234' ) ); ?>" class="small-text" maxlength="8" />
                     <p class="description">Volunteers enter this PIN to access the door scanner. Share this with your door staff.</p>
+                </td>
+            </tr>
+            <tr>
+                <th><label for="blc_gala_admin_pin">Cash/Check Admin PIN</label></th>
+                <td>
+                    <input type="text" id="blc_gala_admin_pin" name="blc_gala_admin_pin" value="<?php echo esc_attr( get_option( 'blc_gala_admin_pin', '0000' ) ); ?>" class="small-text" maxlength="8" />
+                    <p class="description">Admin PIN for processing cash/check payments on the ticket page. Only share with authorized staff.</p>
                 </td>
             </tr>
             <tr>
