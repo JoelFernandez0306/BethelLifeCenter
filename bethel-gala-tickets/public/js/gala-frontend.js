@@ -10,19 +10,15 @@
     // ========================================================================
     // Fee Calculation
     // ========================================================================
-    var feeRate = parseFloat(config.feeRate || 0) / 100;
-    var feeFixed = parseFloat(config.feeFixed || 0);
-
     function calculateFee(subtotal) {
-        if (feeRate <= 0 && feeFixed <= 0) return 0;
-        // Formula: total = (subtotal + fixed) / (1 - rate)
-        // fee = total - subtotal
-        var total = (subtotal + feeFixed) / (1 - feeRate);
-        return Math.round((total - subtotal) * 100) / 100;
-    }
-
-    function calculateTotalWithFee(subtotal) {
-        return Math.round((subtotal + calculateFee(subtotal)) * 100) / 100;
+        var rate = Number(config.feeRate) || 0;   // e.g. 2.99 (percent)
+        var fixed = Number(config.feeFixed) || 0;  // e.g. 0.49 (dollars)
+        if (rate <= 0 && fixed <= 0) return 0;
+        // Calculate what to charge so that after PayPal takes its cut, church gets full subtotal
+        var rateDecimal = rate / 100;
+        var chargeTotal = (subtotal + fixed) / (1 - rateDecimal);
+        var fee = chargeTotal - subtotal;
+        return Math.round(fee * 100) / 100;
     }
 
     // ========================================================================

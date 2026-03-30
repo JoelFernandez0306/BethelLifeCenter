@@ -65,23 +65,24 @@ class BLC_Gala_Shortcode {
         wp_enqueue_script( 'blc-gala-frontend', BLC_GALA_PLUGIN_URL . 'public/js/gala-frontend.js', $js_deps, BLC_GALA_VERSION, true );
 
         $tickets_mgr = new BLC_Gala_Tickets();
-        wp_localize_script( 'blc-gala-frontend', 'blcGala', array(
-            'restUrl'       => rest_url( 'blc-gala/v1/' ),
-            'nonce'         => wp_create_nonce( 'wp_rest' ),
-            'remaining'     => $tickets_mgr->get_remaining_count(),
-            'total'         => (int) get_option( 'blc_gala_total_tickets', 100 ),
-            'price'         => (float) get_option( 'blc_gala_ticket_price', 50.00 ),
-            'maxPerOrder'   => (int) get_option( 'blc_gala_max_per_order', 1 ),
-            'eventDate'     => get_option( 'blc_gala_event_date', '' ),
-            'eventName'     => get_option( 'blc_gala_event_name', '' ),
-            'soldOut'       => $tickets_mgr->is_sold_out(),
+        $config_data = array(
+            'restUrl'         => rest_url( 'blc-gala/v1/' ),
+            'nonce'           => wp_create_nonce( 'wp_rest' ),
+            'remaining'       => (int) $tickets_mgr->get_remaining_count(),
+            'total'           => (int) get_option( 'blc_gala_total_tickets', 100 ),
+            'price'           => (float) get_option( 'blc_gala_ticket_price', 50.00 ),
+            'maxPerOrder'     => (int) get_option( 'blc_gala_max_per_order', 1 ),
+            'eventDate'       => get_option( 'blc_gala_event_date', '' ),
+            'eventName'       => get_option( 'blc_gala_event_name', '' ),
+            'soldOut'         => (bool) $tickets_mgr->is_sold_out(),
             'donationEnabled' => (bool) get_option( 'blc_gala_donation_enabled', 1 ),
-            'paypalConfigured' => $paypal->is_configured(),
-            'feeRate'       => (float) get_option( 'blc_gala_paypal_fee_rate', 2.99 ),
-            'feeFixed'      => (float) get_option( 'blc_gala_paypal_fee_fixed', 0.49 ),
-            'accentColor'   => get_option( 'blc_gala_accent_color', '#C9A84C' ),
-            'secondaryColor' => get_option( 'blc_gala_secondary_color', '#1B2A4A' ),
-        ) );
+            'paypalConfigured' => (bool) $paypal->is_configured(),
+            'feeRate'         => (float) get_option( 'blc_gala_paypal_fee_rate', 2.99 ),
+            'feeFixed'        => (float) get_option( 'blc_gala_paypal_fee_fixed', 0.49 ),
+            'accentColor'     => get_option( 'blc_gala_accent_color', '#C9A84C' ),
+            'secondaryColor'  => get_option( 'blc_gala_secondary_color', '#1B2A4A' ),
+        );
+        wp_add_inline_script( 'blc-gala-frontend', 'window.blcGala = ' . wp_json_encode( $config_data ) . ';', 'before' );
     }
 
     /**
