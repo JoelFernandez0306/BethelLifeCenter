@@ -10,8 +10,8 @@
     // ========================================================================
     // Fee Calculation
     // ========================================================================
-    var feeRate = (config.feeRate || 0) / 100;
-    var feeFixed = config.feeFixed || 0;
+    var feeRate = parseFloat(config.feeRate || 0) / 100;
+    var feeFixed = parseFloat(config.feeFixed || 0);
 
     function calculateFee(subtotal) {
         if (feeRate <= 0 && feeFixed <= 0) return 0;
