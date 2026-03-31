@@ -451,18 +451,16 @@ class BLC_Gala_REST_API {
         }
 
         // Immediately complete the order (no PayPal needed)
-        // Support combined methods like "cash+check"
-        $methods = explode( '+', $payment_method );
-        $ref_parts = array();
-        foreach ( $methods as $m ) {
-            $m = trim( $m );
-            if ( $m === 'check' && $check_number ) {
-                $ref_parts[] = 'CHECK-' . $check_number;
-            } else {
-                $ref_parts[] = strtoupper( $m );
-            }
+        // Build a descriptive payment reference
+        if ( $payment_method === 'cash+check' ) {
+            $cash_amount  = isset( $params['cash_amount'] ) ? floatval( $params['cash_amount'] ) : 0;
+            $check_amount = isset( $params['check_amount'] ) ? floatval( $params['check_amount'] ) : 0;
+            $payment_ref  = 'CASH $' . number_format( $cash_amount, 2 ) . ' + CHECK-' . $check_number . ' $' . number_format( $check_amount, 2 );
+        } elseif ( $payment_method === 'check' && $check_number ) {
+            $payment_ref = 'CHECK-' . $check_number;
+        } else {
+            $payment_ref = 'CASH';
         }
-        $payment_ref = implode( '+', $ref_parts );
 
         $completed = $tickets_mgr->complete_order( $order_data['order_uuid'], $payment_ref, $payment_ref );
 

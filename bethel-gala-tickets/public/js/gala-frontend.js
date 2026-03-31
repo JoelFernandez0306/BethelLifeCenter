@@ -430,11 +430,18 @@
             document.getElementById('blc-cc-email').value = '';
             var chk = document.getElementById('blc-cc-check-number');
             if (chk) chk.value = '';
+            var cashAmt = document.getElementById('blc-cc-cash-amount');
+            if (cashAmt) cashAmt.value = '';
+            var checkAmt = document.getElementById('blc-cc-check-amount');
+            if (checkAmt) checkAmt.value = '';
             var qty = document.getElementById('blc-cc-quantity');
             if (qty) qty.selectedIndex = 0;
             overlay.querySelectorAll('.blc-message').forEach(function (m) { m.style.display = 'none'; });
             overlay.querySelectorAll('.blc-cc-method-btn').forEach(function (b) { b.classList.remove('active'); });
             document.getElementById('blc-cc-check-field').style.display = 'none';
+            document.getElementById('blc-cc-split-fields').style.display = 'none';
+            var splitWarn = document.getElementById('blc-cc-split-warning');
+            if (splitWarn) { splitWarn.style.display = 'none'; splitWarn.textContent = ''; }
             document.getElementById('blc-cc-next-info').style.display = 'none';
         }
 
@@ -491,25 +498,31 @@
                 overlay.querySelectorAll('.blc-cc-method-btn').forEach(function (b) { b.classList.remove('active'); });
                 btn.classList.add('active');
                 ccPaymentMethod = btn.dataset.method;
-
-                // Show check field if method includes check
-                var checkField = document.getElementById('blc-cc-check-field');
-                var needsCheck = ccPaymentMethod.indexOf('check') !== -1;
-                checkField.style.display = needsCheck ? 'block' : 'none';
-
                 document.getElementById('blc-cc-next-info').style.display = 'inline-block';
             });
         });
 
-        // Step 2 -> 3
+        // Update order total display when quantity changes
+        var ccQtySelect = document.getElementById('blc-cc-quantity');
+        if (ccQtySelect) {
+            ccQtySelect.addEventListener('change', function () {
+                var qty = parseInt(ccQtySelect.value) || 1;
+                var total = qty * config.price;
+                var totalEl = document.getElementById('blc-cc-order-total');
+                if (totalEl) totalEl.textContent = 'Total: $' + total.toFixed(2);
+            });
+        }
+
+        // Step 2 -> 3: show/hide check & split fields based on method
         document.getElementById('blc-cc-next-info').addEventListener('click', function () {
-            if (ccPaymentMethod.indexOf('check') !== -1) {
-                var checkNum = document.getElementById('blc-cc-check-number').value.trim();
-                if (!checkNum) {
-                    alert('Please enter the check number.');
-                    return;
-                }
-            }
+            var checkField = document.getElementById('blc-cc-check-field');
+            var splitFields = document.getElementById('blc-cc-split-fields');
+            var needsCheck = ccPaymentMethod.indexOf('check') !== -1;
+            var isSplit = ccPaymentMethod === 'cash+check';
+
+            checkField.style.display = needsCheck ? 'block' : 'none';
+            splitFields.style.display = isSplit ? 'block' : 'none';
+
             showStep('blc-cc-step-info');
         });
 
@@ -528,16 +541,45 @@
             if (!fname) { showMessage('blc-cc-info-msg', 'First name is required.', 'error'); return; }
             if (!lname) { showMessage('blc-cc-info-msg', 'Last name is required.', 'error'); return; }
             if (!email || !isValidEmail(email)) { showMessage('blc-cc-info-msg', 'Valid email is required.', 'error'); return; }
+
+            // Validate check number if needed
+            if (ccPaymentMethod.indexOf('check') !== -1) {
+                var checkNum = document.getElementById('blc-cc-check-number').value.trim();
+                if (!checkNum) { showMessage('blc-cc-info-msg', 'Check number is required.', 'error'); return; }
+            }
+
+            var totalAmount = qty * config.price;
+
+            // Validate split amounts for cash+check
+            if (ccPaymentMethod === 'cash+check') {
+                var cashAmt = parseFloat(document.getElementById('blc-cc-cash-amount').value) || 0;
+                var checkAmt = parseFloat(document.getElementById('blc-cc-check-amount').value) || 0;
+                var splitSum = Math.round((cashAmt + checkAmt) * 100) / 100;
+                var splitWarn = document.getElementById('blc-cc-split-warning');
+
+                if (cashAmt <= 0) { showMessage('blc-cc-info-msg', 'Cash amount must be greater than $0.', 'error'); return; }
+                if (checkAmt <= 0) { showMessage('blc-cc-info-msg', 'Check amount must be greater than $0.', 'error'); return; }
+                if (Math.abs(splitSum - totalAmount) > 0.01) {
+                    splitWarn.textContent = 'Cash ($' + cashAmt.toFixed(2) + ') + Check ($' + checkAmt.toFixed(2) + ') = $' + splitSum.toFixed(2) + ' but total is $' + totalAmount.toFixed(2);
+                    splitWarn.style.display = 'block';
+                    showMessage('blc-cc-info-msg', 'Cash + Check amounts must equal the total ($' + totalAmount.toFixed(2) + ').', 'error');
+                    return;
+                }
+                if (splitWarn) { splitWarn.style.display = 'none'; }
+            }
+
             hideMessage('blc-cc-info-msg');
 
-            var amount = (qty * config.price).toFixed(2);
+            var amount = totalAmount.toFixed(2);
             var methodLabel;
             if (ccPaymentMethod === 'cash') {
                 methodLabel = 'Cash';
             } else if (ccPaymentMethod === 'check') {
                 methodLabel = 'Check #' + document.getElementById('blc-cc-check-number').value.trim();
             } else if (ccPaymentMethod === 'cash+check') {
-                methodLabel = 'Cash + Check #' + document.getElementById('blc-cc-check-number').value.trim();
+                var ca = parseFloat(document.getElementById('blc-cc-cash-amount').value) || 0;
+                var ka = parseFloat(document.getElementById('blc-cc-check-amount').value) || 0;
+                methodLabel = 'Cash $' + ca.toFixed(2) + ' + Check #' + document.getElementById('blc-cc-check-number').value.trim() + ' $' + ka.toFixed(2);
             } else {
                 methodLabel = ccPaymentMethod;
             }
@@ -564,6 +606,19 @@
             var qty = parseInt(document.getElementById('blc-cc-quantity').value) || 1;
             var checkNum = document.getElementById('blc-cc-check-number').value.trim();
 
+            var bodyData = {
+                buyer_name: fname + ' ' + lname,
+                buyer_email: email,
+                quantity: qty,
+                payment_method: ccPaymentMethod,
+                check_number: checkNum
+            };
+
+            if (ccPaymentMethod === 'cash+check') {
+                bodyData.cash_amount = parseFloat(document.getElementById('blc-cc-cash-amount').value) || 0;
+                bodyData.check_amount = parseFloat(document.getElementById('blc-cc-check-amount').value) || 0;
+            }
+
             showMessage('blc-cc-review-msg', '<span class="blc-spinner"></span> Processing...', 'loading');
             document.getElementById('blc-cc-confirm').disabled = true;
 
@@ -573,13 +628,7 @@
                     'Content-Type': 'application/json',
                     'X-BLC-Admin-Token': ccAdminToken
                 },
-                body: JSON.stringify({
-                    buyer_name: fname + ' ' + lname,
-                    buyer_email: email,
-                    quantity: qty,
-                    payment_method: ccPaymentMethod,
-                    check_number: checkNum
-                })
+                body: JSON.stringify(bodyData)
             })
             .then(function (r) { return r.json(); })
             .then(function (data) {

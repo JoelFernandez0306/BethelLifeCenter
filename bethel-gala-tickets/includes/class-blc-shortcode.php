@@ -237,10 +237,6 @@ class BLC_Gala_Shortcode {
                             <button type="button" class="blc-modal-btn blc-modal-btn-primary blc-cc-method-btn" data-method="check" style="width: 100%;">Check</button>
                             <button type="button" class="blc-modal-btn blc-modal-btn-primary blc-cc-method-btn" data-method="cash+check" style="width: 100%;">Cash + Check</button>
                         </div>
-                        <div id="blc-cc-check-field" style="display: none; margin-top: 15px;">
-                            <label for="blc-cc-check-number">Check Number <span class="blc-required">*</span></label>
-                            <input type="text" id="blc-cc-check-number" placeholder="Enter check number" />
-                        </div>
                         <div class="blc-modal-actions" style="margin-top: 15px;">
                             <button type="button" class="blc-modal-btn blc-modal-btn-cancel" id="blc-cc-cancel-method">Cancel</button>
                             <button type="button" class="blc-modal-btn blc-modal-btn-primary" id="blc-cc-next-info" style="display: none;">Next</button>
@@ -268,6 +264,29 @@ class BLC_Gala_Shortcode {
                                     <option value="<?php echo esc_attr( $i ); ?>"><?php echo esc_html( $i . ' ' . ( $i === 1 ? 'ticket' : 'tickets' ) . ' — $' . number_format( $price * $i, 2 ) ); ?></option>
                                 <?php endfor; ?>
                             </select>
+                            <div id="blc-cc-order-total" style="margin-top: 8px; font-weight: 600; color: #1B2A4A; font-size: 1.05em;">Total: $<?php echo esc_html( number_format( $price, 2 ) ); ?></div>
+                        </div>
+                        <!-- Check fields (visible for Check and Cash+Check) -->
+                        <div id="blc-cc-check-field" style="display: none;">
+                            <div class="blc-form-group">
+                                <label>Check Number <span class="blc-required">*</span></label>
+                                <input type="text" id="blc-cc-check-number" placeholder="Enter check number" />
+                            </div>
+                        </div>
+                        <!-- Split amounts (visible only for Cash+Check) -->
+                        <div id="blc-cc-split-fields" style="display: none;">
+                            <p style="font-size: 0.9em; color: #666; margin: 0 0 10px; font-style: italic;">Enter how much is paid by each method:</p>
+                            <div style="display: flex; gap: 10px;">
+                                <div class="blc-form-group" style="flex: 1;">
+                                    <label>Cash Amount <span class="blc-required">*</span></label>
+                                    <input type="number" id="blc-cc-cash-amount" placeholder="0.00" min="0" step="0.01" style="width: 100%; padding: 10px 12px; border: 1px solid #e0d9c8; border-radius: 8px; font-size: 1em; box-sizing: border-box;" />
+                                </div>
+                                <div class="blc-form-group" style="flex: 1;">
+                                    <label>Check Amount <span class="blc-required">*</span></label>
+                                    <input type="number" id="blc-cc-check-amount" placeholder="0.00" min="0" step="0.01" style="width: 100%; padding: 10px 12px; border: 1px solid #e0d9c8; border-radius: 8px; font-size: 1em; box-sizing: border-box;" />
+                                </div>
+                            </div>
+                            <div id="blc-cc-split-warning" style="display: none; color: #c0392b; font-size: 0.85em; margin-top: 4px;"></div>
                         </div>
                         <div class="blc-modal-actions">
                             <button type="button" class="blc-modal-btn blc-modal-btn-cancel" id="blc-cc-back-method">Back</button>
