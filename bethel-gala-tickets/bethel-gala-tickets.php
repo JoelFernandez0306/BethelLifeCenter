@@ -3,7 +3,7 @@
  * Plugin Name: Always on Mission Gala Tickets
  * Plugin URI:  https://bethellifecenter.org
  * Description: Ticket sales, QR code tickets, live availability counter, and donations for the Always on Mission Gala 2026 hosted by Bethel Life Center.
- * Version:     1.0.0
+ * Version:     1.1.0
  * Author:      Bethel Life Center
  * Author URI:  https://bethellifecenter.org
  * License:     GPL-2.0+
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'BLC_GALA_VERSION', '1.0.0' );
+define( 'BLC_GALA_VERSION', '1.1.0' );
 define( 'BLC_GALA_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'BLC_GALA_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'BLC_GALA_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
