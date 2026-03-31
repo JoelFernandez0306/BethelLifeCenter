@@ -39,6 +39,7 @@
                 <th>Qty</th>
                 <th>Amount</th>
                 <th>Status</th>
+                <th>Payment</th>
                 <th>Ticket Codes</th>
                 <th>Checked In</th>
                 <th class="blc-col-actions">Actions</th>
@@ -46,7 +47,7 @@
         </thead>
         <tbody>
             <?php if ( empty( $orders ) ) : ?>
-                <tr><td colspan="10">No orders found.</td></tr>
+                <tr><td colspan="11">No orders found.</td></tr>
             <?php else : ?>
                 <?php foreach ( $orders as $order ) : ?>
                     <tr>
@@ -57,6 +58,16 @@
                         <td><?php echo esc_html( $order->quantity ); ?></td>
                         <td>$<?php echo esc_html( number_format( $order->amount_paid, 2 ) ); ?></td>
                         <td><span class="blc-status blc-status-<?php echo esc_attr( $order->status ); ?>"><?php echo esc_html( ucfirst( $order->status ) ); ?></span></td>
+                        <td><?php
+                            $ref = $order->paypal_order_id;
+                            if ( empty( $ref ) ) {
+                                echo '—';
+                            } elseif ( strpos( $ref, 'CASH' ) !== false || strpos( $ref, 'CHECK' ) !== false ) {
+                                echo esc_html( $ref );
+                            } else {
+                                echo 'PayPal';
+                            }
+                        ?></td>
                         <td><?php echo $order->ticket_codes ? esc_html( $order->ticket_codes ) : '—'; ?></td>
                         <td>
                             <?php
