@@ -231,9 +231,11 @@ class BLC_Gala_Shortcode {
                     <!-- Step 2: Payment Method -->
                     <div id="blc-cc-step-method" class="blc-cc-step" style="display: none;">
                         <h3>Payment Method</h3>
-                        <div class="blc-cc-method-btns">
-                            <button type="button" class="blc-modal-btn blc-modal-btn-primary blc-cc-method-btn" data-method="cash">Cash</button>
-                            <button type="button" class="blc-modal-btn blc-modal-btn-primary blc-cc-method-btn" data-method="check">Check</button>
+                        <p style="font-size: 0.9em; color: #666; margin: 0 0 12px;">Select how the buyer is paying:</p>
+                        <div class="blc-cc-method-btns" style="flex-direction: column;">
+                            <button type="button" class="blc-modal-btn blc-modal-btn-primary blc-cc-method-btn" data-method="cash" style="width: 100%;">Cash</button>
+                            <button type="button" class="blc-modal-btn blc-modal-btn-primary blc-cc-method-btn" data-method="check" style="width: 100%;">Check</button>
+                            <button type="button" class="blc-modal-btn blc-modal-btn-primary blc-cc-method-btn" data-method="cash+check" style="width: 100%;">Cash + Check</button>
                         </div>
                         <div id="blc-cc-check-field" style="display: none; margin-top: 15px;">
                             <label for="blc-cc-check-number">Check Number <span class="blc-required">*</span></label>

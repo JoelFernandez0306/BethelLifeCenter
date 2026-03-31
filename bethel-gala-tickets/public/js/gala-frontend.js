@@ -485,25 +485,19 @@
             if (e.key === 'Enter') document.getElementById('blc-cc-verify-pin').click();
         });
 
-        // Step 2: Select method (toggle — both can be active)
+        // Step 2: Select method (exclusive — one choice at a time)
         overlay.querySelectorAll('.blc-cc-method-btn').forEach(function (btn) {
             btn.addEventListener('click', function () {
-                btn.classList.toggle('active');
+                overlay.querySelectorAll('.blc-cc-method-btn').forEach(function (b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                ccPaymentMethod = btn.dataset.method;
 
-                // Build ccPaymentMethod from all active buttons
-                var activeMethods = [];
-                overlay.querySelectorAll('.blc-cc-method-btn.active').forEach(function (b) {
-                    activeMethods.push(b.dataset.method);
-                });
-                ccPaymentMethod = activeMethods.join('+');
-
-                // Show check field if check is one of the selected methods
+                // Show check field if method includes check
                 var checkField = document.getElementById('blc-cc-check-field');
-                var hasCheck = activeMethods.indexOf('check') !== -1;
-                checkField.style.display = hasCheck ? 'block' : 'none';
+                var needsCheck = ccPaymentMethod.indexOf('check') !== -1;
+                checkField.style.display = needsCheck ? 'block' : 'none';
 
-                // Show Next button if at least one method is selected
-                document.getElementById('blc-cc-next-info').style.display = activeMethods.length > 0 ? 'inline-block' : 'none';
+                document.getElementById('blc-cc-next-info').style.display = 'inline-block';
             });
         });
 
@@ -537,11 +531,16 @@
             hideMessage('blc-cc-info-msg');
 
             var amount = (qty * config.price).toFixed(2);
-            var methods = ccPaymentMethod.split('+');
-            var methodParts = [];
-            if (methods.indexOf('cash') !== -1) methodParts.push('Cash');
-            if (methods.indexOf('check') !== -1) methodParts.push('Check #' + document.getElementById('blc-cc-check-number').value.trim());
-            var methodLabel = methodParts.join(' + ');
+            var methodLabel;
+            if (ccPaymentMethod === 'cash') {
+                methodLabel = 'Cash';
+            } else if (ccPaymentMethod === 'check') {
+                methodLabel = 'Check #' + document.getElementById('blc-cc-check-number').value.trim();
+            } else if (ccPaymentMethod === 'cash+check') {
+                methodLabel = 'Cash + Check #' + document.getElementById('blc-cc-check-number').value.trim();
+            } else {
+                methodLabel = ccPaymentMethod;
+            }
 
             document.getElementById('blc-cc-review-name').textContent = fname + ' ' + lname;
             document.getElementById('blc-cc-review-email').textContent = email;
