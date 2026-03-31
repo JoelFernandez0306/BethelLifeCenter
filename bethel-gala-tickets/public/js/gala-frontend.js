@@ -438,10 +438,10 @@
             if (qty) qty.selectedIndex = 0;
             overlay.querySelectorAll('.blc-message').forEach(function (m) { m.style.display = 'none'; });
             overlay.querySelectorAll('.blc-cc-method-btn').forEach(function (b) { b.classList.remove('active'); });
-            document.getElementById('blc-cc-check-field').style.display = 'none';
-            document.getElementById('blc-cc-split-fields').style.display = 'none';
+            document.getElementById('blc-cc-check-field').setAttribute('style', 'display: none !important;');
+            document.getElementById('blc-cc-split-fields').setAttribute('style', 'display: none !important;');
             var splitWarn = document.getElementById('blc-cc-split-warning');
-            if (splitWarn) { splitWarn.style.display = 'none'; splitWarn.textContent = ''; }
+            if (splitWarn) { splitWarn.setAttribute('style', 'display: none !important;'); splitWarn.textContent = ''; }
             document.getElementById('blc-cc-next-info').style.display = 'none';
         }
 
@@ -515,15 +515,15 @@
 
         // Step 2 -> 3: show/hide check & split fields based on method
         document.getElementById('blc-cc-next-info').addEventListener('click', function () {
+            showStep('blc-cc-step-info');
+
             var checkField = document.getElementById('blc-cc-check-field');
             var splitFields = document.getElementById('blc-cc-split-fields');
             var needsCheck = ccPaymentMethod.indexOf('check') !== -1;
             var isSplit = ccPaymentMethod === 'cash+check';
 
-            checkField.style.display = needsCheck ? 'block' : 'none';
-            splitFields.style.display = isSplit ? 'block' : 'none';
-
-            showStep('blc-cc-step-info');
+            checkField.setAttribute('style', needsCheck ? 'display: block !important;' : 'display: none !important;');
+            splitFields.setAttribute('style', isSplit ? 'display: block !important;' : 'display: none !important;');
         });
 
         // Step 3 -> 2 (back)
