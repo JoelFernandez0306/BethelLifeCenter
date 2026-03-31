@@ -41,7 +41,7 @@
                 <th>Status</th>
                 <th>Ticket Codes</th>
                 <th>Checked In</th>
-                <th>Actions</th>
+                <th class="blc-col-actions">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -69,7 +69,7 @@
                             }
                             ?>
                         </td>
-                        <td>
+                        <td class="blc-col-actions">
                             <?php if ( $order->status === 'completed' ) : ?>
                                 <button type="button" class="button blc-resend-btn" data-order-id="<?php echo esc_attr( $order->id ); ?>" data-email="<?php echo esc_attr( $order->buyer_email ); ?>">Resend Email</button>
                             <?php else : ?>
@@ -88,7 +88,7 @@
     /* Hide WordPress admin sidebar, toolbar, and non-essential elements */
     #adminmenumain, #wpadminbar, #wpfooter, #screen-meta, #screen-meta-links,
     .blc-gala-filters, .notice, .updated, .update-nag, #blc-print-orders,
-    .blc-resend-btn { display: none !important; }
+    .blc-resend-btn, .blc-col-actions { display: none !important; }
     #wpcontent, #wpbody-content { margin-left: 0 !important; padding: 0 !important; }
     .wrap { max-width: 100%; }
     .wp-list-table { font-size: 11px; }
