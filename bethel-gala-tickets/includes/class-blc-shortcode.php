@@ -190,10 +190,10 @@ class BLC_Gala_Shortcode {
                                 <option value="<?php echo esc_attr( $i ); ?>"><?php echo esc_html( $label ); ?></option>
                             <?php endfor; ?>
                         </select>
-                        <div class="blc-form-total">
-                            <div>Subtotal: <strong id="blc-ticket-total">$<?php echo esc_html( number_format( $price, 2 ) ); ?></strong></div>
-                            <div class="blc-fee-line">PayPal Transaction Fee: <strong id="blc-ticket-fee">$0.00</strong></div>
-                            <div class="blc-grand-total">Total: <strong id="blc-ticket-grand-total">$<?php echo esc_html( number_format( $price, 2 ) ); ?></strong></div>
+                        <div class="blc-form-total" style="font-size: 1.2em; color: <?php echo esc_attr( $secondary ); ?>; margin: 10px 0 0;">
+                            <div>Subtotal: <strong id="blc-ticket-total" style="color: <?php echo esc_attr( $accent ); ?>; font-size: 1.1em;">$<?php echo esc_html( number_format( $price, 2 ) ); ?></strong></div>
+                            <div class="blc-fee-line" style="font-size: 0.9em; color: #666666; margin-top: 4px;">PayPal Transaction Fee: <strong id="blc-ticket-fee" style="color: #666666;">$0.00</strong></div>
+                            <div class="blc-grand-total" style="font-size: 1.15em; margin-top: 6px; padding-top: 6px; border-top: 1px solid #e0d9c8;">Total: <strong id="blc-ticket-grand-total" style="color: <?php echo esc_attr( $accent ); ?>; font-size: 1.1em;">$<?php echo esc_html( number_format( $price, 2 ) ); ?></strong></div>
                         </div>
                     </div>
 
@@ -415,6 +415,14 @@ class BLC_Gala_Shortcode {
                     <div id="blc-scan-result-icon" class="blc-scan-result-icon"></div>
                     <div id="blc-scan-result-name" class="blc-scan-result-name"></div>
                     <div id="blc-scan-result-status" class="blc-scan-result-status"></div>
+                </div>
+
+                <!-- Checked-In Guest List -->
+                <div class="blc-gala-section" style="margin-top: 20px;">
+                    <h2 class="blc-gala-section-title">Checked-In Guests</h2>
+                    <div id="blc-guest-list-container">
+                        <p style="text-align: center; color: #666;">Loading...</p>
+                    </div>
                 </div>
             </div>
 

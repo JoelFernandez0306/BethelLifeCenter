@@ -14,6 +14,10 @@
     ) );
     ?>
 
+    <div style="margin: 15px 0;">
+        <button type="button" id="blc-print-orders" class="button button-secondary" onclick="window.print();">Print Orders</button>
+    </div>
+
     <div class="blc-gala-filters" style="margin: 15px 0;">
         <strong>Filter:</strong>
         <a href="?page=blc-gala-orders&status=completed" class="button <?php echo $filter_status === 'completed' ? 'button-primary' : ''; ?>">Completed</a>
@@ -78,6 +82,20 @@
         </tbody>
     </table>
 </div>
+
+<style>
+@media print {
+    /* Hide WordPress admin sidebar, toolbar, and non-essential elements */
+    #adminmenumain, #wpadminbar, #wpfooter, #screen-meta, #screen-meta-links,
+    .blc-gala-filters, .notice, .updated, .update-nag, #blc-print-orders,
+    .blc-resend-btn { display: none !important; }
+    #wpcontent, #wpbody-content { margin-left: 0 !important; padding: 0 !important; }
+    .wrap { max-width: 100%; }
+    .wp-list-table { font-size: 11px; }
+    .wp-list-table th, .wp-list-table td { padding: 4px 6px !important; }
+    h1 { font-size: 18px; margin-bottom: 10px; }
+}
+</style>
 
 <script>
 (function($) {

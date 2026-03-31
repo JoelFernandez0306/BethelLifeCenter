@@ -451,10 +451,18 @@ class BLC_Gala_REST_API {
         }
 
         // Immediately complete the order (no PayPal needed)
-        $payment_ref = strtoupper( $payment_method );
-        if ( $payment_method === 'check' && $check_number ) {
-            $payment_ref = 'CHECK-' . $check_number;
+        // Support combined methods like "cash+check"
+        $methods = explode( '+', $payment_method );
+        $ref_parts = array();
+        foreach ( $methods as $m ) {
+            $m = trim( $m );
+            if ( $m === 'check' && $check_number ) {
+                $ref_parts[] = 'CHECK-' . $check_number;
+            } else {
+                $ref_parts[] = strtoupper( $m );
+            }
         }
+        $payment_ref = implode( '+', $ref_parts );
 
         $completed = $tickets_mgr->complete_order( $order_data['order_uuid'], $payment_ref, $payment_ref );
 

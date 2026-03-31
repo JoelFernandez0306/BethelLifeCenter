@@ -27,10 +27,28 @@ class BLC_Gala_Scanner {
              WHERE o.status = 'completed' AND t.is_checked_in = 1"
         );
 
+        // Get list of checked-in guests
+        $guests = $wpdb->get_results(
+            "SELECT t.attendee_name, t.checked_in_at
+             FROM {$tickets_table} t
+             JOIN {$orders_table} o ON t.order_id = o.id
+             WHERE o.status = 'completed' AND t.is_checked_in = 1
+             ORDER BY t.checked_in_at DESC"
+        );
+
+        $guest_list = array();
+        foreach ( $guests as $guest ) {
+            $guest_list[] = array(
+                'name'          => $guest->attendee_name,
+                'checked_in_at' => $guest->checked_in_at,
+            );
+        }
+
         return array(
             'total_tickets' => $total_tickets,
             'checked_in'    => $checked_in,
             'remaining'     => $total_tickets - $checked_in,
+            'guests'        => $guest_list,
         );
     }
 }

@@ -485,22 +485,31 @@
             if (e.key === 'Enter') document.getElementById('blc-cc-verify-pin').click();
         });
 
-        // Step 2: Select method
+        // Step 2: Select method (toggle — both can be active)
         overlay.querySelectorAll('.blc-cc-method-btn').forEach(function (btn) {
             btn.addEventListener('click', function () {
-                overlay.querySelectorAll('.blc-cc-method-btn').forEach(function (b) { b.classList.remove('active'); });
-                btn.classList.add('active');
-                ccPaymentMethod = btn.dataset.method;
+                btn.classList.toggle('active');
 
+                // Build ccPaymentMethod from all active buttons
+                var activeMethods = [];
+                overlay.querySelectorAll('.blc-cc-method-btn.active').forEach(function (b) {
+                    activeMethods.push(b.dataset.method);
+                });
+                ccPaymentMethod = activeMethods.join('+');
+
+                // Show check field if check is one of the selected methods
                 var checkField = document.getElementById('blc-cc-check-field');
-                checkField.style.display = ccPaymentMethod === 'check' ? 'block' : 'none';
-                document.getElementById('blc-cc-next-info').style.display = 'inline-block';
+                var hasCheck = activeMethods.indexOf('check') !== -1;
+                checkField.style.display = hasCheck ? 'block' : 'none';
+
+                // Show Next button if at least one method is selected
+                document.getElementById('blc-cc-next-info').style.display = activeMethods.length > 0 ? 'inline-block' : 'none';
             });
         });
 
         // Step 2 -> 3
         document.getElementById('blc-cc-next-info').addEventListener('click', function () {
-            if (ccPaymentMethod === 'check') {
+            if (ccPaymentMethod.indexOf('check') !== -1) {
                 var checkNum = document.getElementById('blc-cc-check-number').value.trim();
                 if (!checkNum) {
                     alert('Please enter the check number.');
@@ -528,9 +537,11 @@
             hideMessage('blc-cc-info-msg');
 
             var amount = (qty * config.price).toFixed(2);
-            var methodLabel = ccPaymentMethod === 'check'
-                ? 'Check #' + document.getElementById('blc-cc-check-number').value.trim()
-                : 'Cash';
+            var methods = ccPaymentMethod.split('+');
+            var methodParts = [];
+            if (methods.indexOf('cash') !== -1) methodParts.push('Cash');
+            if (methods.indexOf('check') !== -1) methodParts.push('Check #' + document.getElementById('blc-cc-check-number').value.trim());
+            var methodLabel = methodParts.join(' + ');
 
             document.getElementById('blc-cc-review-name').textContent = fname + ' ' + lname;
             document.getElementById('blc-cc-review-email').textContent = email;

@@ -253,6 +253,52 @@
     // ========================================================================
     // Check-in Stats
     // ========================================================================
+    function formatGuestTime(dateStr) {
+        if (!dateStr) return '';
+        var d = new Date(dateStr.replace(' ', 'T'));
+        if (isNaN(d.getTime())) return dateStr;
+        var hours = d.getHours();
+        var mins = d.getMinutes();
+        var ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12 || 12;
+        var minStr = mins < 10 ? '0' + mins : '' + mins;
+        return hours + ':' + minStr + ' ' + ampm;
+    }
+
+    function renderGuestList(guests) {
+        var container = document.getElementById('blc-guest-list-container');
+        if (!container) return;
+
+        if (!guests || guests.length === 0) {
+            container.innerHTML = '<p style="text-align: center; color: #666;">No guests checked in yet.</p>';
+            return;
+        }
+
+        var html = '<table class="blc-guest-list-table" style="width: 100%; border-collapse: collapse;">';
+        html += '<thead><tr style="border-bottom: 2px solid #e0d9c8;">';
+        html += '<th style="text-align: left; padding: 8px 5px; font-size: 0.9em; color: #666;">#</th>';
+        html += '<th style="text-align: left; padding: 8px 5px; font-size: 0.9em; color: #666;">Guest Name</th>';
+        html += '<th style="text-align: left; padding: 8px 5px; font-size: 0.9em; color: #666;">Time</th>';
+        html += '</tr></thead><tbody>';
+
+        for (var i = 0; i < guests.length; i++) {
+            html += '<tr style="border-bottom: 1px solid #e0d9c8;">';
+            html += '<td style="padding: 8px 5px; font-size: 0.95em;">' + (i + 1) + '</td>';
+            html += '<td style="padding: 8px 5px; font-weight: 600; font-size: 0.95em;">' + escapeHtml(guests[i].name) + '</td>';
+            html += '<td style="padding: 8px 5px; font-size: 0.9em; color: #666;">' + formatGuestTime(guests[i].checked_in_at) + '</td>';
+            html += '</tr>';
+        }
+
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+
+    function escapeHtml(text) {
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(text));
+        return div.innerHTML;
+    }
+
     function refreshStats() {
         fetch(config.restUrl + 'checkin-stats', {
             method: 'GET',
@@ -263,6 +309,9 @@
             var el = document.getElementById('blc-scanner-checked-in');
             if (el && typeof data.checked_in !== 'undefined') {
                 el.textContent = data.checked_in + ' / ' + data.total_tickets;
+            }
+            if (data.guests) {
+                renderGuestList(data.guests);
             }
         })
         .catch(function () { /* silent */ });
