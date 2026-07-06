@@ -17,13 +17,14 @@ class BLC_Gala_Tickets {
      */
     public function get_remaining_count() {
         global $wpdb;
-        $total = (int) get_option( 'blc_gala_total_tickets', 100 );
-        $sold  = (int) $wpdb->get_var( $wpdb->prepare(
+        $total       = (int) get_option( 'blc_gala_total_tickets', 100 );
+        $manual_sold = (int) get_option( 'blc_gala_manual_sold', 0 );
+        $db_sold     = (int) $wpdb->get_var( $wpdb->prepare(
             "SELECT COALESCE(SUM(quantity), 0) FROM {$this->orders_table} WHERE order_type = %s AND status = %s",
             'ticket',
             'completed'
         ) );
-        return max( 0, $total - $sold );
+        return max( 0, $total - $db_sold - $manual_sold );
     }
 
     /**
@@ -41,8 +42,9 @@ class BLC_Gala_Tickets {
     public function reserve_ticket( $buyer_name, $buyer_email, $quantity = 1 ) {
         global $wpdb;
 
-        $total  = (int) get_option( 'blc_gala_total_tickets', 100 );
-        $max    = (int) get_option( 'blc_gala_max_per_order', 1 );
+        $total       = (int) get_option( 'blc_gala_total_tickets', 100 );
+        $manual_sold = (int) get_option( 'blc_gala_manual_sold', 0 );
+        $max         = (int) get_option( 'blc_gala_max_per_order', 1 );
 
         if ( $quantity > $max ) {
             return new WP_Error( 'quantity_exceeded', sprintf( 'Maximum %d ticket(s) per order.', $max ), array( 'status' => 400 ) );
@@ -50,11 +52,13 @@ class BLC_Gala_Tickets {
 
         $wpdb->query( 'START TRANSACTION' );
 
-        $sold = (int) $wpdb->get_var( $wpdb->prepare(
+        $db_sold = (int) $wpdb->get_var( $wpdb->prepare(
             "SELECT COALESCE(SUM(quantity), 0) FROM {$this->orders_table} WHERE order_type = %s AND status = %s FOR UPDATE",
             'ticket',
             'completed'
         ) );
+
+        $sold = $db_sold + $manual_sold;
 
         if ( $sold + $quantity > $total ) {
             $wpdb->query( 'ROLLBACK' );

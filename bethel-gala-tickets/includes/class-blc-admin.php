@@ -57,6 +57,7 @@ class BLC_Gala_Admin {
         register_setting( 'blc_gala_settings', 'blc_gala_total_tickets', array( 'sanitize_callback' => 'absint' ) );
         register_setting( 'blc_gala_settings', 'blc_gala_ticket_price', array( 'sanitize_callback' => 'floatval' ) );
         register_setting( 'blc_gala_settings', 'blc_gala_max_per_order', array( 'sanitize_callback' => 'absint' ) );
+        register_setting( 'blc_gala_settings', 'blc_gala_manual_sold', array( 'sanitize_callback' => 'absint' ) );
 
         // PayPal settings
         register_setting( 'blc_gala_settings', 'blc_gala_paypal_client_id', array( 'sanitize_callback' => 'sanitize_text_field' ) );

@@ -50,6 +50,11 @@
                 <td><input type="number" id="blc_gala_total_tickets" name="blc_gala_total_tickets" value="<?php echo esc_attr( get_option( 'blc_gala_total_tickets' ) ); ?>" min="1" class="small-text" /></td>
             </tr>
             <tr>
+                <th><label for="blc_gala_manual_sold">Tickets Sold (Manual Adjustment)</label></th>
+                <td><input type="number" id="blc_gala_manual_sold" name="blc_gala_manual_sold" value="<?php echo esc_attr( get_option( 'blc_gala_manual_sold', 0 ) ); ?>" min="0" class="small-text" />
+                <p class="description">Add tickets sold outside this system (e.g., sold before plugin was set up). This is added on top of the <?php echo esc_html( $sold ); ?> ticket(s) already tracked by orders in the system.</p></td>
+            </tr>
+            <tr>
                 <th><label for="blc_gala_ticket_price">Ticket Price ($)</label></th>
                 <td><input type="number" id="blc_gala_ticket_price" name="blc_gala_ticket_price" value="<?php echo esc_attr( get_option( 'blc_gala_ticket_price' ) ); ?>" min="0" step="0.01" class="small-text" /></td>
             </tr>
