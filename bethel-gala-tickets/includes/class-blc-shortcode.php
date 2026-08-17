@@ -6,19 +6,33 @@ class BLC_Gala_Shortcode {
     public function __construct() {
         add_shortcode( 'blc_gala_tickets', array( $this, 'render' ) );
         add_shortcode( 'blc_gala_scanner', array( $this, 'render_scanner' ) );
+        add_shortcode( 'blc_gala_quickpay', array( $this, 'render_quickpay' ) );
+        add_shortcode( 'blc_gala_quickpay_purchases', array( $this, 'render_quickpay_purchases' ) );
         add_action( 'wp_enqueue_scripts', array( $this, 'maybe_enqueue_assets' ) );
         add_action( 'template_redirect', array( $this, 'detect_page_url' ) );
     }
 
     /**
-     * Auto-detect and save the URL of the page containing our shortcode.
+     * Auto-detect and save the URL of the pages containing our shortcodes,
+     * so the admin screen knows where the QR codes should point.
      */
     public function detect_page_url() {
         global $post;
-        if ( $post && has_shortcode( $post->post_content, 'blc_gala_tickets' ) ) {
+        if ( ! $post ) {
+            return;
+        }
+
+        if ( has_shortcode( $post->post_content, 'blc_gala_tickets' ) ) {
             $url = get_permalink( $post );
             if ( $url && $url !== get_option( 'blc_gala_page_url' ) ) {
                 update_option( 'blc_gala_page_url', $url );
+            }
+        }
+
+        if ( has_shortcode( $post->post_content, 'blc_gala_quickpay' ) ) {
+            $url = get_permalink( $post );
+            if ( $url && $url !== get_option( 'blc_gala_quickpay_page_url' ) ) {
+                update_option( 'blc_gala_quickpay_page_url', $url );
             }
         }
     }
@@ -32,10 +46,12 @@ class BLC_Gala_Shortcode {
             return;
         }
 
-        $has_tickets = has_shortcode( $post->post_content, 'blc_gala_tickets' );
-        $has_scanner = has_shortcode( $post->post_content, 'blc_gala_scanner' );
+        $has_tickets   = has_shortcode( $post->post_content, 'blc_gala_tickets' );
+        $has_scanner   = has_shortcode( $post->post_content, 'blc_gala_scanner' );
+        $has_quickpay  = has_shortcode( $post->post_content, 'blc_gala_quickpay' );
+        $has_qp_report = has_shortcode( $post->post_content, 'blc_gala_quickpay_purchases' );
 
-        if ( ! $has_tickets && ! $has_scanner ) {
+        if ( ! $has_tickets && ! $has_scanner && ! $has_quickpay && ! $has_qp_report ) {
             return;
         }
 
@@ -48,6 +64,28 @@ class BLC_Gala_Shortcode {
             wp_localize_script( 'blc-gala-scanner', 'blcScanner', array(
                 'restUrl' => rest_url( 'blc-gala/v1/' ),
             ) );
+        }
+
+        // Quick Pay payment page and purchase log
+        if ( $has_quickpay || $has_qp_report ) {
+            $qp_paypal = new BLC_Gala_PayPal();
+            $qp_deps   = array();
+
+            if ( $has_quickpay && $qp_paypal->is_configured() ) {
+                wp_enqueue_script( 'paypal-sdk', $qp_paypal->get_sdk_url(), array(), null, true );
+                $qp_deps[] = 'paypal-sdk';
+            }
+
+            wp_enqueue_script( 'blc-gala-quickpay', BLC_GALA_PLUGIN_URL . 'public/js/gala-quickpay.js', $qp_deps, BLC_GALA_VERSION, true );
+
+            $item_id = isset( $_GET['blc_qp'] ) ? sanitize_text_field( wp_unslash( $_GET['blc_qp'] ) ) : '';
+            $item    = BLC_Gala_QuickPay::get_item( $item_id );
+
+            wp_add_inline_script( 'blc-gala-quickpay', 'window.blcQuickPay = ' . wp_json_encode( array(
+                'restUrl' => rest_url( 'blc-gala/v1/' ),
+                'itemId'  => $item ? $item['id'] : '',
+                'label'   => $item ? $item['label'] : '',
+            ) ) . ';', 'before' );
         }
 
         if ( ! $has_tickets ) {
@@ -444,6 +482,148 @@ class BLC_Gala_Shortcode {
                     <div id="blc-guest-list-container">
                         <p style="text-align: center; color: #666;">Loading...</p>
                     </div>
+                </div>
+            </div>
+
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+
+    /**
+     * Render [blc_gala_quickpay] — the page a Quick Pay QR code opens.
+     * The amount comes from the saved item, never from the URL.
+     */
+    public function render_quickpay( $atts ) {
+        $accent    = get_option( 'blc_gala_accent_color', '#C9A84C' );
+        $secondary = get_option( 'blc_gala_secondary_color', '#1B2A4A' );
+        $church    = get_option( 'blc_gala_event_tagline', 'Bethel Life Center' );
+
+        $item_id = isset( $_GET['blc_qp'] ) ? sanitize_text_field( wp_unslash( $_GET['blc_qp'] ) ) : '';
+        $item    = BLC_Gala_QuickPay::get_item( $item_id );
+        $paypal  = new BLC_Gala_PayPal();
+
+        ob_start();
+        ?>
+        <div class="blc-gala-wrapper blc-quickpay-wrapper" style="--blc-accent: <?php echo esc_attr( $accent ); ?>; --blc-secondary: <?php echo esc_attr( $secondary ); ?>;">
+
+            <?php if ( ! $item ) : ?>
+
+                <?php $available = BLC_Gala_QuickPay::get_items(); ?>
+                <div class="blc-gala-hero">
+                    <h1 class="blc-gala-title">Make a Payment</h1>
+                    <p class="blc-gala-tagline"><?php echo esc_html( $church ); ?></p>
+                </div>
+                <div class="blc-gala-section">
+                    <?php if ( empty( $available ) ) : ?>
+                        <p class="blc-gala-description">No payment options are set up yet. Please check back soon.</p>
+                    <?php else : ?>
+                        <h2 class="blc-gala-section-title">Choose an Amount</h2>
+                        <p class="blc-gala-description">Scan a QR code, or pick an option below.</p>
+                        <div class="blc-quickpay-options">
+                            <?php foreach ( $available as $option ) :
+                                $totals = BLC_Gala_QuickPay::calculate_total( $option['amount'] );
+                                ?>
+                                <a class="blc-quickpay-option" href="<?php echo esc_url( add_query_arg( 'blc_qp', $option['id'] ) ); ?>">
+                                    <span class="blc-quickpay-option-label"><?php echo esc_html( $option['label'] ); ?></span>
+                                    <span class="blc-quickpay-option-amount">$<?php echo esc_html( number_format( $totals['total'], 2 ) ); ?></span>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+
+            <?php else :
+                $totals = BLC_Gala_QuickPay::calculate_total( $item['amount'] );
+                ?>
+
+                <div class="blc-gala-hero">
+                    <h1 class="blc-gala-title"><?php echo esc_html( $item['label'] ); ?></h1>
+                    <p class="blc-gala-tagline"><?php echo esc_html( $church ); ?></p>
+                </div>
+
+                <div class="blc-gala-section">
+                    <div class="blc-quickpay-amount">$<?php echo esc_html( number_format( $totals['total'], 2 ) ); ?></div>
+
+                    <div class="blc-form-total" style="font-size: 1.05em; color: <?php echo esc_attr( $secondary ); ?>; margin: 0 0 20px; text-align: center;">
+                        <div>Amount: <strong style="color: <?php echo esc_attr( $accent ); ?>;">$<?php echo esc_html( number_format( $totals['subtotal'], 2 ) ); ?></strong></div>
+                        <?php if ( $totals['fee'] > 0 ) : ?>
+                            <div style="font-size: 0.9em; color: #666666; margin-top: 4px;">Processing Fee: <strong style="color: #666666;">$<?php echo esc_html( number_format( $totals['fee'], 2 ) ); ?></strong></div>
+                            <div style="font-size: 1.1em; margin-top: 6px; padding-top: 6px; border-top: 1px solid #e0d9c8;">Total: <strong style="color: <?php echo esc_attr( $accent ); ?>;">$<?php echo esc_html( number_format( $totals['total'], 2 ) ); ?></strong></div>
+                        <?php endif; ?>
+                    </div>
+
+                    <div id="blc-quickpay-buttons" class="blc-paypal-buttons"></div>
+
+                    <?php if ( ! $paypal->is_configured() ) : ?>
+                        <div class="blc-message blc-error" style="display: block;">Payment is not yet configured. Please check back soon!</div>
+                    <?php endif; ?>
+
+                    <div id="blc-quickpay-message" class="blc-message" style="display: none;"></div>
+                </div>
+
+            <?php endif; ?>
+
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+
+    /**
+     * Render [blc_gala_quickpay_purchases] — the Quick Pay purchase log.
+     * PIN-gated because it lists payer names and card digits.
+     */
+    public function render_quickpay_purchases( $atts ) {
+        $accent    = get_option( 'blc_gala_accent_color', '#C9A84C' );
+        $secondary = get_option( 'blc_gala_secondary_color', '#1B2A4A' );
+
+        ob_start();
+        ?>
+        <div class="blc-gala-wrapper blc-quickpay-report" style="--blc-accent: <?php echo esc_attr( $accent ); ?>; --blc-secondary: <?php echo esc_attr( $secondary ); ?>;">
+
+            <!-- PIN gate -->
+            <div id="blc-qp-pin-section">
+                <div class="blc-gala-hero">
+                    <h1 class="blc-gala-title">QR Code Payments</h1>
+                    <p class="blc-gala-tagline"><?php echo esc_html( get_option( 'blc_gala_event_tagline', 'Bethel Life Center' ) ); ?></p>
+                </div>
+                <div class="blc-gala-section" style="text-align: center;">
+                    <h2 class="blc-gala-section-title">Enter Admin Code</h2>
+                    <form id="blc-qp-pin-form" class="blc-gala-form" style="max-width: 300px; margin: 20px auto;">
+                        <div class="blc-form-group">
+                            <input type="password" id="blc-qp-pin-input" class="blc-scanner-pin-input" placeholder="Admin Code" maxlength="8" inputmode="numeric" autocomplete="off" required />
+                        </div>
+                        <button type="submit" class="blc-scanner-pin-btn">View Payments</button>
+                    </form>
+                    <div id="blc-qp-pin-message" class="blc-message" style="display: none;"></div>
+                </div>
+            </div>
+
+            <!-- Purchase log -->
+            <div id="blc-qp-report-section" style="display: none;">
+                <div class="blc-gala-hero">
+                    <h1 class="blc-gala-title">QR Code Payments</h1>
+                    <p class="blc-gala-tagline"><?php echo esc_html( get_option( 'blc_gala_event_tagline', 'Bethel Life Center' ) ); ?></p>
+                </div>
+
+                <div class="blc-quickpay-totals" id="blc-qp-totals">
+                    <div class="blc-quickpay-total-box">
+                        <span class="blc-quickpay-total-number" id="blc-qp-count">0</span>
+                        <span class="blc-quickpay-total-label">Payments</span>
+                    </div>
+                    <div class="blc-quickpay-total-box">
+                        <span class="blc-quickpay-total-number" id="blc-qp-sum">$0.00</span>
+                        <span class="blc-quickpay-total-label">Total Collected</span>
+                    </div>
+                </div>
+
+                <div class="blc-gala-section" style="margin-top: 20px;">
+                    <h2 class="blc-gala-section-title">All Payments</h2>
+                    <div id="blc-qp-list"><p style="text-align:center;color:#666;">Loading&hellip;</p></div>
+                    <p style="margin-top: 15px; text-align: center;">
+                        <button type="button" id="blc-qp-refresh" class="blc-scanner-btn">Refresh</button>
+                        <button type="button" id="blc-qp-print" class="blc-scanner-btn blc-scanner-btn-primary" onclick="window.print();">Print</button>
+                    </p>
                 </div>
             </div>
 

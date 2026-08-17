@@ -8,6 +8,20 @@ class BLC_Gala_Activator {
         self::set_default_options();
     }
 
+    /**
+     * Run the schema/defaults pass when the plugin files have been updated
+     * without the plugin being deactivated and reactivated. dbDelta only
+     * applies the differences, so this is a no-op once the version matches.
+     */
+    public static function maybe_upgrade() {
+        if ( get_option( 'blc_gala_db_version' ) === BLC_GALA_VERSION ) {
+            return;
+        }
+
+        self::create_tables();
+        self::set_default_options();
+    }
+
     private static function create_tables() {
         global $wpdb;
         $charset_collate = $wpdb->get_charset_collate();
@@ -18,13 +32,17 @@ class BLC_Gala_Activator {
         $sql = "CREATE TABLE {$orders_table} (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
             order_uuid VARCHAR(36) NOT NULL,
-            order_type ENUM('ticket','donation') NOT NULL DEFAULT 'ticket',
+            order_type ENUM('ticket','donation','quickpay') NOT NULL DEFAULT 'ticket',
             buyer_name VARCHAR(255) NOT NULL,
             buyer_email VARCHAR(255) NOT NULL,
             quantity INT UNSIGNED NOT NULL DEFAULT 1,
             amount_paid DECIMAL(10,2) NOT NULL DEFAULT 0.00,
             paypal_order_id VARCHAR(255) DEFAULT NULL,
             paypal_capture_id VARCHAR(255) DEFAULT NULL,
+            payer_name VARCHAR(255) DEFAULT NULL,
+            card_last4 VARCHAR(4) DEFAULT NULL,
+            card_brand VARCHAR(32) DEFAULT NULL,
+            payment_label VARCHAR(255) DEFAULT NULL,
             status ENUM('pending','completed','refunded','failed') NOT NULL DEFAULT 'pending',
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),

@@ -145,8 +145,71 @@ class BLC_Gala_PayPal {
             'status'          => $body['status'],
             'paypal_order_id' => $paypal_order_id,
             'capture_id'      => $capture_id,
+            'payer'           => $this->extract_payer_details( $body ),
             'raw'             => $body,
         );
+    }
+
+    /**
+     * Pull the payer's name and card details out of a capture response.
+     *
+     * PayPal only returns card digits when the buyer paid by card as a guest.
+     * Paying from a PayPal balance means there is no card involved, so last4
+     * and brand come back empty and only the account name is available.
+     *
+     * @param array $body Decoded capture response.
+     * @return array {payer_name, payer_email, card_last4, card_brand}
+     */
+    public function extract_payer_details( $body ) {
+        $details = array(
+            'payer_name'  => '',
+            'payer_email' => '',
+            'card_last4'  => '',
+            'card_brand'  => '',
+        );
+
+        $source = isset( $body['payment_source'] ) ? $body['payment_source'] : array();
+
+        if ( ! empty( $source['card'] ) ) {
+            $card = $source['card'];
+            $details['card_last4'] = isset( $card['last_digits'] ) ? $card['last_digits'] : '';
+            $details['card_brand'] = isset( $card['brand'] ) ? $card['brand'] : '';
+            if ( ! empty( $card['name'] ) ) {
+                $details['payer_name'] = $card['name'];
+            }
+        }
+
+        if ( ! empty( $source['paypal'] ) ) {
+            $pp = $source['paypal'];
+            if ( empty( $details['payer_name'] ) && ! empty( $pp['name'] ) ) {
+                $details['payer_name'] = self::join_name( $pp['name'] );
+            }
+            if ( ! empty( $pp['email_address'] ) ) {
+                $details['payer_email'] = $pp['email_address'];
+            }
+        }
+
+        // Fall back to the top-level payer object when payment_source is sparse.
+        if ( ! empty( $body['payer'] ) ) {
+            $payer = $body['payer'];
+            if ( empty( $details['payer_name'] ) && ! empty( $payer['name'] ) ) {
+                $details['payer_name'] = self::join_name( $payer['name'] );
+            }
+            if ( empty( $details['payer_email'] ) && ! empty( $payer['email_address'] ) ) {
+                $details['payer_email'] = $payer['email_address'];
+            }
+        }
+
+        return $details;
+    }
+
+    /**
+     * Flatten PayPal's {given_name, surname} pair into one display name.
+     */
+    private static function join_name( $name ) {
+        $given   = isset( $name['given_name'] ) ? $name['given_name'] : '';
+        $surname = isset( $name['surname'] ) ? $name['surname'] : '';
+        return trim( $given . ' ' . $surname );
     }
 
     /**

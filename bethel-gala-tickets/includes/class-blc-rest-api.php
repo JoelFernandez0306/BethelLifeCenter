@@ -107,6 +107,148 @@ class BLC_Gala_REST_API {
             'callback'            => array( $this, 'cash_check_order' ),
             'permission_callback' => array( $this, 'check_admin_token' ),
         ) );
+
+        // Public: start a fixed-amount payment from a Quick Pay QR code
+        register_rest_route( $namespace, '/quickpay-create-order', array(
+            'methods'             => 'POST',
+            'callback'            => array( $this, 'quickpay_create_order' ),
+            'permission_callback' => '__return_true',
+        ) );
+
+        // Public: capture a Quick Pay payment
+        register_rest_route( $namespace, '/quickpay-capture-order', array(
+            'methods'             => 'POST',
+            'callback'            => array( $this, 'quickpay_capture_order' ),
+            'permission_callback' => '__return_true',
+        ) );
+
+        // Quick Pay purchase log (admin PIN required — shows names and card digits)
+        register_rest_route( $namespace, '/quickpay-purchases', array(
+            'methods'             => 'GET',
+            'callback'            => array( $this, 'quickpay_purchases' ),
+            'permission_callback' => array( $this, 'check_admin_token' ),
+        ) );
+    }
+
+    /**
+     * POST /quickpay-create-order — start a fixed-amount payment from a QR code.
+     */
+    public function quickpay_create_order( $request ) {
+        global $wpdb;
+
+        $params  = $request->get_json_params();
+        $item_id = isset( $params['item_id'] ) ? sanitize_text_field( $params['item_id'] ) : '';
+
+        // The amount always comes from the saved item, never from the request,
+        // so editing the URL cannot change what gets charged.
+        $item = BLC_Gala_QuickPay::get_item( $item_id );
+
+        if ( ! $item ) {
+            return new WP_Error( 'invalid_item', 'This payment code is no longer available.', array( 'status' => 404 ) );
+        }
+
+        $paypal = new BLC_Gala_PayPal();
+        if ( ! $paypal->is_configured() ) {
+            return new WP_Error( 'paypal_not_configured', 'Payments are not set up yet.', array( 'status' => 503 ) );
+        }
+
+        $totals      = BLC_Gala_QuickPay::calculate_total( $item['amount'] );
+        $tickets_mgr = new BLC_Gala_Tickets();
+        $order_data  = $tickets_mgr->create_quickpay_order( $item['label'], $totals['total'] );
+
+        if ( is_wp_error( $order_data ) ) {
+            return $order_data;
+        }
+
+        $paypal_order = $paypal->create_order( $order_data['order_uuid'], $totals['total'], $item['label'] );
+
+        if ( is_wp_error( $paypal_order ) ) {
+            $wpdb->delete( $wpdb->prefix . 'blc_gala_orders', array( 'order_uuid' => $order_data['order_uuid'] ) );
+            return $paypal_order;
+        }
+
+        $wpdb->update(
+            $wpdb->prefix . 'blc_gala_orders',
+            array( 'paypal_order_id' => $paypal_order['id'] ),
+            array( 'order_uuid' => $order_data['order_uuid'] )
+        );
+
+        return rest_ensure_response( array(
+            'paypal_order_id' => $paypal_order['id'],
+            'order_uuid'      => $order_data['order_uuid'],
+        ) );
+    }
+
+    /**
+     * POST /quickpay-capture-order — capture the payment and record who paid.
+     */
+    public function quickpay_capture_order( $request ) {
+        $params = $request->get_json_params();
+
+        $paypal_order_id = isset( $params['paypal_order_id'] ) ? sanitize_text_field( $params['paypal_order_id'] ) : '';
+        $order_uuid      = isset( $params['order_uuid'] ) ? sanitize_text_field( $params['order_uuid'] ) : '';
+
+        if ( empty( $paypal_order_id ) || empty( $order_uuid ) ) {
+            return new WP_Error( 'missing_fields', 'Payment reference is missing.', array( 'status' => 400 ) );
+        }
+
+        $paypal = new BLC_Gala_PayPal();
+        $result = $paypal->capture_order( $paypal_order_id );
+
+        if ( is_wp_error( $result ) ) {
+            return $result;
+        }
+
+        if ( $result['status'] !== 'COMPLETED' ) {
+            return new WP_Error( 'payment_not_completed', 'Payment was not completed.', array( 'status' => 400 ) );
+        }
+
+        $tickets_mgr = new BLC_Gala_Tickets();
+        $order       = $tickets_mgr->complete_quickpay_order(
+            $order_uuid,
+            $paypal_order_id,
+            $result['capture_id'],
+            $result['payer']
+        );
+
+        if ( is_wp_error( $order ) ) {
+            return $order;
+        }
+
+        return rest_ensure_response( array(
+            'success' => true,
+            'message' => 'Thank you! Your payment of $' . number_format( (float) $order->amount_paid, 2 ) . ' was received.',
+        ) );
+    }
+
+    /**
+     * GET /quickpay-purchases — the purchase log, behind the admin PIN.
+     */
+    public function quickpay_purchases( $request ) {
+        $tickets_mgr = new BLC_Gala_Tickets();
+        $rows        = $tickets_mgr->get_quickpay_purchases();
+
+        $purchases = array();
+        $total     = 0.0;
+
+        foreach ( $rows as $row ) {
+            $total += (float) $row->amount_paid;
+
+            $purchases[] = array(
+                'name'       => $row->payer_name ? $row->payer_name : 'Name not provided',
+                'card_last4' => $row->card_last4,
+                'card_brand' => $row->card_brand,
+                'amount'     => (float) $row->amount_paid,
+                'label'      => $row->payment_label,
+                'created_at' => $row->created_at,
+            );
+        }
+
+        return rest_ensure_response( array(
+            'purchases' => $purchases,
+            'count'     => count( $purchases ),
+            'total'     => round( $total, 2 ),
+        ) );
     }
 
     /**

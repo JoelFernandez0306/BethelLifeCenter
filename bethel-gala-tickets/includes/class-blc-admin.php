@@ -6,7 +6,41 @@ class BLC_Gala_Admin {
     public function __construct() {
         add_action( 'admin_menu', array( $this, 'add_menu_pages' ) );
         add_action( 'admin_init', array( $this, 'register_settings' ) );
+        add_action( 'admin_init', array( $this, 'handle_quickpay_actions' ) );
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
+    }
+
+    /**
+     * Add or delete a Quick Pay QR code.
+     *
+     * These live outside the Settings API because they are a repeatable list
+     * rather than a fixed set of fields, so they get their own form and nonce.
+     */
+    public function handle_quickpay_actions() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return;
+        }
+
+        if ( isset( $_POST['blc_qp_add'] ) ) {
+            check_admin_referer( 'blc_qp_add' );
+
+            $result = BLC_Gala_QuickPay::add_item(
+                isset( $_POST['blc_qp_label'] ) ? wp_unslash( $_POST['blc_qp_label'] ) : '',
+                isset( $_POST['blc_qp_amount'] ) ? wp_unslash( $_POST['blc_qp_amount'] ) : 0
+            );
+
+            $notice = is_wp_error( $result ) ? 'invalid' : 'added';
+            wp_safe_redirect( admin_url( 'admin.php?page=blc-gala-settings&blc_qp_notice=' . $notice . '#blc-quickpay' ) );
+            exit;
+        }
+
+        if ( isset( $_GET['blc_qp_delete'] ) ) {
+            check_admin_referer( 'blc_qp_delete' );
+
+            BLC_Gala_QuickPay::delete_item( sanitize_text_field( wp_unslash( $_GET['blc_qp_delete'] ) ) );
+            wp_safe_redirect( admin_url( 'admin.php?page=blc-gala-settings&blc_qp_notice=deleted#blc-quickpay' ) );
+            exit;
+        }
     }
 
     public function add_menu_pages() {

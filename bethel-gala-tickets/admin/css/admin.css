@@ -82,3 +82,71 @@
     background: #f8d7da;
     color: #721c24;
 }
+
+/* ==========================================================================
+   Quick Pay QR Codes
+   ========================================================================== */
+
+.blc-qp-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.blc-qp-card {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 6px;
+    padding: 20px;
+    width: 260px;
+    text-align: center;
+}
+
+.blc-qp-card-label {
+    margin: 0 0 4px;
+    font-size: 15px;
+    line-height: 1.3;
+}
+
+.blc-qp-card-amount {
+    font-size: 30px;
+    font-weight: 700;
+    color: #1B2A4A;
+    line-height: 1.1;
+    margin-bottom: 12px;
+}
+
+.blc-qp-card-qr img {
+    width: 180px;
+    height: 180px;
+    image-rendering: pixelated;
+}
+
+.blc-qp-card-breakdown {
+    margin: 10px 0 12px !important;
+    font-size: 12px;
+}
+
+.blc-qp-card-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 0 0 8px;
+}
+
+.blc-qp-card-url {
+    margin: 0 !important;
+    font-size: 12px;
+}
+
+.blc-qp-delete {
+    color: #b32d2e !important;
+    border-color: #b32d2e !important;
+}
+
+.blc-qp-delete:hover {
+    background: #b32d2e !important;
+    color: #fff !important;
+}

@@ -728,6 +728,136 @@
     box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.2);
 }
 
+/* ==========================================================================
+   Quick Pay — fixed-amount QR payment page and purchase log
+   ========================================================================== */
+
+.blc-quickpay-amount {
+    text-align: center;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 3.5em;
+    font-weight: 700;
+    color: var(--blc-secondary) !important;
+    line-height: 1.1;
+    margin-bottom: 15px;
+}
+
+.blc-quickpay-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 15px;
+}
+
+.blc-quickpay-option {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    padding: 16px 20px;
+    border: 2px solid var(--blc-border);
+    border-radius: var(--blc-radius);
+    text-decoration: none !important;
+    background: var(--blc-bg);
+    transition: all 0.2s ease;
+}
+
+.blc-quickpay-option:hover {
+    border-color: var(--blc-accent);
+    background: var(--blc-bg-light);
+}
+
+.blc-quickpay-option-label {
+    font-weight: 600;
+    color: var(--blc-secondary) !important;
+}
+
+.blc-quickpay-option-amount {
+    font-family: Georgia, serif;
+    font-size: 1.4em;
+    font-weight: 700;
+    color: var(--blc-accent) !important;
+    white-space: nowrap;
+}
+
+/* Purchase log summary tiles */
+.blc-quickpay-totals {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
+
+.blc-quickpay-total-box {
+    flex: 1;
+    min-width: 130px;
+    background: var(--blc-secondary);
+    border-radius: var(--blc-radius);
+    padding: 18px 15px;
+    text-align: center;
+}
+
+.blc-quickpay-total-number {
+    display: block;
+    font-family: Georgia, serif;
+    font-size: 2em;
+    font-weight: 700;
+    color: var(--blc-accent);
+    line-height: 1.2;
+}
+
+.blc-quickpay-total-label {
+    display: block;
+    font-size: 0.75em;
+    color: #ffffff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 5px;
+}
+
+/* Purchase log table */
+.blc-quickpay-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95em;
+}
+
+.blc-quickpay-table th {
+    text-align: left;
+    padding: 10px 8px;
+    border-bottom: 2px solid var(--blc-border);
+    font-size: 0.85em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--blc-text-light);
+    white-space: nowrap;
+}
+
+.blc-quickpay-table td {
+    padding: 10px 8px;
+    border-bottom: 1px solid var(--blc-border);
+}
+
+.blc-quickpay-report .blc-scanner-btn {
+    margin: 0 5px;
+}
+
+@media print {
+    .blc-quickpay-report .blc-gala-hero,
+    .blc-quickpay-report .blc-scanner-btn,
+    #blc-qp-pin-section { display: none !important; }
+
+    .blc-quickpay-report .blc-gala-section { border: none; padding: 0; }
+    .blc-quickpay-total-box { border: 1px solid #ccc; }
+}
+
+@media (max-width: 600px) {
+    .blc-quickpay-amount { font-size: 2.6em; }
+    .blc-quickpay-table { font-size: 0.85em; }
+    .blc-quickpay-table th,
+    .blc-quickpay-table td { padding: 8px 5px; }
+}
+
 /* Mobile optimizations for scanner */
 @media (max-width: 600px) {
     .blc-scan-result-icon {

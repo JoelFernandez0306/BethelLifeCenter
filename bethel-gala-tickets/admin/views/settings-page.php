@@ -201,4 +201,137 @@
 
         <?php submit_button( 'Save Settings' ); ?>
     </form>
+
+    <hr style="margin: 40px 0 25px;" />
+
+    <?php
+    // ---------------------------------------------------------------------
+    // Quick Pay QR Codes
+    // ---------------------------------------------------------------------
+    $qp_items    = BLC_Gala_QuickPay::get_items();
+    $qp_page_url = get_option( 'blc_gala_quickpay_page_url', '' );
+    $qp_notice   = isset( $_GET['blc_qp_notice'] ) ? sanitize_text_field( wp_unslash( $_GET['blc_qp_notice'] ) ) : '';
+    ?>
+
+    <h2 id="blc-quickpay">Quick Pay QR Codes</h2>
+    <p class="description" style="max-width: 700px;">
+        Create a QR code for any dollar amount. Print it, set it out, and people scan it to pay that
+        exact amount &mdash; useful for fundraiser meals, snacks, books, or anything sold in person.
+        The PayPal fee settings above are added automatically so the church receives the full amount.
+    </p>
+
+    <?php if ( $qp_notice === 'added' ) : ?>
+        <div class="notice notice-success is-dismissible"><p>QR code created.</p></div>
+    <?php elseif ( $qp_notice === 'deleted' ) : ?>
+        <div class="notice notice-success is-dismissible"><p>QR code deleted. Past payments were kept.</p></div>
+    <?php elseif ( $qp_notice === 'invalid' ) : ?>
+        <div class="notice notice-error is-dismissible"><p>Please enter an amount of at least $0.01.</p></div>
+    <?php endif; ?>
+
+    <?php if ( ! $qp_page_url ) : ?>
+        <div class="notice notice-warning inline" style="margin: 15px 0;">
+            <p>
+                <strong>One setup step first:</strong> create a page containing the shortcode
+                <code>[blc_gala_quickpay]</code>, publish it, then visit it once. The QR codes will
+                appear here automatically pointing at that page.
+            </p>
+        </div>
+    <?php endif; ?>
+
+    <form method="post" action="" style="margin: 20px 0; padding: 15px 20px; background: #fff; border: 1px solid #c3c4c7; max-width: 700px;">
+        <?php wp_nonce_field( 'blc_qp_add' ); ?>
+        <h3 style="margin-top: 0;">Create a New QR Code</h3>
+        <table class="form-table">
+            <tr>
+                <th><label for="blc_qp_label">What is it for?</label></th>
+                <td>
+                    <input type="text" id="blc_qp_label" name="blc_qp_label" class="regular-text" placeholder="e.g. Fundraiser Dinner" />
+                    <p class="description">Shown on the payment page and in the payment log.</p>
+                </td>
+            </tr>
+            <tr>
+                <th><label for="blc_qp_amount">Amount ($)</label></th>
+                <td>
+                    <input type="number" id="blc_qp_amount" name="blc_qp_amount" class="small-text" min="0.01" step="0.01" placeholder="12.00" required />
+                    <p class="description">What the church should receive. The PayPal fee is added on top.</p>
+                </td>
+            </tr>
+        </table>
+        <p><button type="submit" name="blc_qp_add" value="1" class="button button-primary">Create QR Code</button></p>
+    </form>
+
+    <?php if ( empty( $qp_items ) ) : ?>
+        <p><em>No QR codes yet. Create one above.</em></p>
+    <?php else : ?>
+        <div class="blc-qp-grid">
+            <?php
+            $qr_gen = new BLC_Gala_QR_Generator();
+            foreach ( $qp_items as $qp_item ) :
+                $qp_totals  = BLC_Gala_QuickPay::calculate_total( $qp_item['amount'] );
+                $qp_pay_url = BLC_Gala_QuickPay::get_payment_url( $qp_item['id'] );
+                $qp_delete  = wp_nonce_url(
+                    admin_url( 'admin.php?page=blc-gala-settings&blc_qp_delete=' . rawurlencode( $qp_item['id'] ) ),
+                    'blc_qp_delete'
+                );
+                ?>
+                <div class="blc-qp-card" data-label="<?php echo esc_attr( $qp_item['label'] ); ?>" data-amount="$<?php echo esc_attr( number_format( $qp_totals['total'], 2 ) ); ?>">
+                    <h4 class="blc-qp-card-label"><?php echo esc_html( $qp_item['label'] ); ?></h4>
+                    <div class="blc-qp-card-amount">$<?php echo esc_html( number_format( $qp_totals['total'], 2 ) ); ?></div>
+
+                    <div class="blc-qp-card-qr">
+                        <?php
+                        if ( $qp_pay_url ) {
+                            echo $qr_gen->generate_svg( $qp_pay_url, 200 );
+                        } else {
+                            echo '<p class="description">Publish the Quick Pay page to generate this QR code.</p>';
+                        }
+                        ?>
+                    </div>
+
+                    <p class="description blc-qp-card-breakdown">
+                        Church receives $<?php echo esc_html( number_format( $qp_totals['subtotal'], 2 ) ); ?><?php
+                        if ( $qp_totals['fee'] > 0 ) {
+                            echo ' &middot; fee $' . esc_html( number_format( $qp_totals['fee'], 2 ) );
+                        }
+                        ?>
+                    </p>
+
+                    <?php if ( $qp_pay_url ) : ?>
+                        <p class="blc-qp-card-actions">
+                            <button type="button" class="button blc-qp-print">Print</button>
+                            <button type="button" class="button blc-qp-download">Download</button>
+                            <a href="<?php echo esc_url( $qp_delete ); ?>" class="button blc-qp-delete" onclick="return confirm('Delete this QR code? Any printed copies will stop working. Past payments are kept.');">Delete</a>
+                        </p>
+                        <p class="description blc-qp-card-url"><a href="<?php echo esc_url( $qp_pay_url ); ?>" target="_blank">Open payment page</a></p>
+                    <?php else : ?>
+                        <p class="blc-qp-card-actions">
+                            <a href="<?php echo esc_url( $qp_delete ); ?>" class="button blc-qp-delete" onclick="return confirm('Delete this QR code?');">Delete</a>
+                        </p>
+                    <?php endif; ?>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+
+    <h3 style="margin-top: 30px;">Payment Log Page</h3>
+    <table class="form-table">
+        <tr>
+            <th>Purchases Shortcode</th>
+            <td>
+                <code>[blc_gala_quickpay_purchases]</code>
+                <p class="description">
+                    Put this on a page to see every QR code payment &mdash; payer name, card last 4, and amount.
+                    It asks for the <strong>Cash/Check Admin PIN</strong> above before showing anything,
+                    since it displays payment details.
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <th>Payment Page Shortcode</th>
+            <td>
+                <code>[blc_gala_quickpay]</code>
+                <p class="description">The page the QR codes open. Create it once and publish it; every QR code uses it.</p>
+            </td>
+        </tr>
+    </table>
 </div>

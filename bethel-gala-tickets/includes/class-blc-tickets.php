@@ -226,6 +226,105 @@ class BLC_Gala_Tickets {
     }
 
     /**
+     * Create a pending quick-pay order for a fixed-amount QR code.
+     *
+     * @param string $label  Which item was scanned, for the purchase log.
+     * @param float  $amount The total the buyer will be charged, fee included.
+     */
+    public function create_quickpay_order( $label, $amount ) {
+        global $wpdb;
+
+        $order_uuid = wp_generate_uuid4();
+
+        $inserted = $wpdb->insert( $this->orders_table, array(
+            'order_uuid'    => $order_uuid,
+            'order_type'    => 'quickpay',
+            'buyer_name'    => '',
+            'buyer_email'   => '',
+            'quantity'      => 1,
+            'amount_paid'   => floatval( $amount ),
+            'payment_label' => sanitize_text_field( $label ),
+            'status'        => 'pending',
+            'created_at'    => current_time( 'mysql' ),
+        ) );
+
+        if ( ! $inserted ) {
+            return new WP_Error( 'db_error', 'Failed to start the payment.', array( 'status' => 500 ) );
+        }
+
+        return array(
+            'order_id'   => $wpdb->insert_id,
+            'order_uuid' => $order_uuid,
+            'amount'     => floatval( $amount ),
+        );
+    }
+
+    /**
+     * Mark a quick-pay order complete and record who paid.
+     *
+     * @param array $payer Payer details from BLC_Gala_PayPal::extract_payer_details().
+     */
+    public function complete_quickpay_order( $order_uuid, $paypal_order_id, $capture_id, $payer ) {
+        global $wpdb;
+
+        $order = $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM {$this->orders_table} WHERE order_uuid = %s",
+            $order_uuid
+        ) );
+
+        if ( ! $order ) {
+            return new WP_Error( 'not_found', 'Payment not found.', array( 'status' => 404 ) );
+        }
+
+        if ( $order->status === 'completed' ) {
+            return new WP_Error( 'already_completed', 'This payment was already recorded.', array( 'status' => 400 ) );
+        }
+
+        $payer_name = isset( $payer['payer_name'] ) ? sanitize_text_field( $payer['payer_name'] ) : '';
+        $payer_mail = isset( $payer['payer_email'] ) ? sanitize_email( $payer['payer_email'] ) : '';
+        $last4      = isset( $payer['card_last4'] ) ? preg_replace( '/\D/', '', $payer['card_last4'] ) : '';
+        $brand      = isset( $payer['card_brand'] ) ? sanitize_text_field( $payer['card_brand'] ) : '';
+
+        $wpdb->update(
+            $this->orders_table,
+            array(
+                'status'            => 'completed',
+                'paypal_order_id'   => sanitize_text_field( $paypal_order_id ),
+                'paypal_capture_id' => sanitize_text_field( $capture_id ),
+                'buyer_name'        => $payer_name,
+                'buyer_email'       => $payer_mail,
+                'payer_name'        => $payer_name,
+                'card_last4'        => substr( $last4, -4 ),
+                'card_brand'        => $brand,
+            ),
+            array( 'order_uuid' => $order_uuid )
+        );
+
+        return $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM {$this->orders_table} WHERE order_uuid = %s",
+            $order_uuid
+        ) );
+    }
+
+    /**
+     * Completed quick-pay purchases, newest first.
+     */
+    public function get_quickpay_purchases( $limit = 500 ) {
+        global $wpdb;
+
+        return $wpdb->get_results( $wpdb->prepare(
+            "SELECT payer_name, card_last4, card_brand, amount_paid, payment_label, created_at
+             FROM {$this->orders_table}
+             WHERE order_type = %s AND status = %s
+             ORDER BY created_at DESC
+             LIMIT %d",
+            'quickpay',
+            'completed',
+            $limit
+        ) );
+    }
+
+    /**
      * Get all orders with optional filtering.
      */
     public function get_orders( $args = array() ) {
