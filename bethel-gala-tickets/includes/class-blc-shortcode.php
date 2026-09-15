@@ -22,6 +22,14 @@ class BLC_Gala_Shortcode {
             return;
         }
 
+        // Only trust a real, published page. Previewing a draft also reaches
+        // this hook, and get_permalink() on a draft returns a temporary URL
+        // like ?page_id=123 — baking that into a printed QR code would leave
+        // it pointing at a page the public cannot open.
+        if ( 'publish' !== $post->post_status || is_preview() ) {
+            return;
+        }
+
         if ( has_shortcode( $post->post_content, 'blc_gala_tickets' ) ) {
             $url = get_permalink( $post );
             if ( $url && $url !== get_option( 'blc_gala_page_url' ) ) {
