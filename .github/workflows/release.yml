@@ -7,10 +7,21 @@ name: Release plugin
 #   git tag v1.4.0 && git push origin v1.4.0
 
 on:
+  # Covers both ways of cutting a release: pushing a tag from a clone, and
+  # using the "Draft a new release" form on GitHub, which creates the tag for
+  # you. Whichever fires, the ZIP gets attached to the release.
   push:
     tags:
       - 'v*'
+  release:
+    types: [published]
   workflow_dispatch:
+
+# If one release triggers both events, keep only the later run so the ZIP is
+# not uploaded twice.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
