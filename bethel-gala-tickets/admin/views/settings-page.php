@@ -297,7 +297,14 @@
             <td>
                 <a href="<?php echo esc_url( $check_url ); ?>" class="button">Check for Updates</a>
                 <p class="description">
-                    Updates are checked automatically a few times a day. This forces an immediate check.
+                    <?php if ( ! empty( $release['checked_at'] ) ) : ?>
+                        Last checked
+                        <strong><?php echo esc_html( human_time_diff( (int) $release['checked_at'] ) ); ?> ago</strong>.
+                        The result is cached for a few hours, so use this button to see a brand new
+                        release right away.
+                    <?php else : ?>
+                        Updates are checked automatically a few times a day. This forces an immediate check.
+                    <?php endif; ?>
                     &nbsp;&middot;&nbsp;
                     <a href="<?php echo esc_url( BLC_Gala_Updater::releases_url() ); ?>" target="_blank">View all releases</a>
                 </p>

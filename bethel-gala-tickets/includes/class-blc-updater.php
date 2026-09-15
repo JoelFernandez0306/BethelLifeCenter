@@ -53,7 +53,14 @@ class BLC_Gala_Updater {
      * @return array {version, package, url, notes, published} — version is '' when unknown.
      */
     public function get_latest_release( $force = false ) {
-        $empty = array( 'version' => '', 'package' => '', 'url' => '', 'notes' => '', 'published' => '' );
+        $empty = array(
+            'version'    => '',
+            'package'    => '',
+            'url'        => '',
+            'notes'      => '',
+            'published'  => '',
+            'checked_at' => 0,
+        );
 
         if ( ! $force ) {
             $cached = get_site_transient( self::TRANSIENT );
@@ -61,6 +68,10 @@ class BLC_Gala_Updater {
                 return array_merge( $empty, $cached );
             }
         }
+
+        // Past this point we are actually contacting GitHub, so record when,
+        // including on the failure paths below.
+        $empty['checked_at'] = time();
 
         $response = wp_remote_get(
             'https://api.github.com/repos/' . self::REPO . '/releases/latest',
@@ -88,11 +99,12 @@ class BLC_Gala_Updater {
 
         $data = array(
             // Tags are written v1.3.0; the version itself is 1.3.0.
-            'version'   => ltrim( (string) $body['tag_name'], 'vV' ),
-            'package'   => $this->pick_package( $body ),
-            'url'       => isset( $body['html_url'] ) ? $body['html_url'] : '',
-            'notes'     => isset( $body['body'] ) ? (string) $body['body'] : '',
-            'published' => isset( $body['published_at'] ) ? $body['published_at'] : '',
+            'version'    => ltrim( (string) $body['tag_name'], 'vV' ),
+            'package'    => $this->pick_package( $body ),
+            'url'        => isset( $body['html_url'] ) ? $body['html_url'] : '',
+            'notes'      => isset( $body['body'] ) ? (string) $body['body'] : '',
+            'published'  => isset( $body['published_at'] ) ? $body['published_at'] : '',
+            'checked_at' => time(),
         );
 
         set_site_transient( self::TRANSIENT, $data, self::CACHE_HOURS * HOUR_IN_SECONDS );
