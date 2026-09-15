@@ -41,6 +41,37 @@ class BLC_Gala_Admin {
             wp_safe_redirect( admin_url( 'admin.php?page=blc-gala-settings&blc_qp_notice=deleted#blc-quickpay' ) );
             exit;
         }
+
+        $this->handle_volunteer_actions();
+    }
+
+    /**
+     * Add or remove a free-admission volunteer.
+     *
+     * Like the Quick Pay list these are a repeatable set rather than fixed
+     * fields, so they use their own form and nonce instead of the Settings API.
+     */
+    private function handle_volunteer_actions() {
+        if ( isset( $_POST['blc_vol_add'] ) ) {
+            check_admin_referer( 'blc_vol_add' );
+
+            $result = BLC_Gala_Volunteers::add_volunteer(
+                isset( $_POST['blc_vol_first'] ) ? wp_unslash( $_POST['blc_vol_first'] ) : '',
+                isset( $_POST['blc_vol_last'] ) ? wp_unslash( $_POST['blc_vol_last'] ) : ''
+            );
+
+            $notice = is_wp_error( $result ) ? 'invalid' : 'added';
+            wp_safe_redirect( admin_url( 'admin.php?page=blc-gala-settings&blc_vol_notice=' . $notice . '#blc-volunteers' ) );
+            exit;
+        }
+
+        if ( isset( $_GET['blc_vol_delete'] ) ) {
+            check_admin_referer( 'blc_vol_delete' );
+
+            BLC_Gala_Volunteers::delete_volunteer( sanitize_text_field( wp_unslash( $_GET['blc_vol_delete'] ) ) );
+            wp_safe_redirect( admin_url( 'admin.php?page=blc-gala-settings&blc_vol_notice=deleted#blc-volunteers' ) );
+            exit;
+        }
     }
 
     public function add_menu_pages() {

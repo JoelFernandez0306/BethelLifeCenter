@@ -13,18 +13,52 @@ class BLC_Gala_Tickets {
     }
 
     /**
-     * Get the number of remaining tickets.
+     * Every seat accounted for, broken out by where it came from.
+     *
+     * Three things consume the same pool of seats: orders taken through this
+     * site, sales recorded by hand (tickets sold before this site existed),
+     * and volunteers attending free.
+     *
+     * @return array {total, online, recorded, volunteers, taken, remaining}
      */
-    public function get_remaining_count() {
+    public function get_ticket_breakdown() {
         global $wpdb;
-        $total       = (int) get_option( 'blc_gala_total_tickets', 100 );
-        $manual_sold = (int) get_option( 'blc_gala_manual_sold', 0 );
-        $db_sold     = (int) $wpdb->get_var( $wpdb->prepare(
+
+        $online = (int) $wpdb->get_var( $wpdb->prepare(
             "SELECT COALESCE(SUM(quantity), 0) FROM {$this->orders_table} WHERE order_type = %s AND status = %s",
             'ticket',
             'completed'
         ) );
-        return max( 0, $total - $db_sold - $manual_sold );
+
+        $total      = (int) get_option( 'blc_gala_total_tickets', 100 );
+        $recorded   = (int) get_option( 'blc_gala_manual_sold', 0 );
+        $volunteers = self::volunteer_seats();
+        $taken      = $online + $recorded + $volunteers;
+
+        return array(
+            'total'      => $total,
+            'online'     => $online,
+            'recorded'   => $recorded,
+            'volunteers' => $volunteers,
+            'taken'      => $taken,
+            'remaining'  => max( 0, $total - $taken ),
+        );
+    }
+
+    /**
+     * Seats held by free volunteers. Guarded so ticket counting still works
+     * if this runs before the volunteer class has loaded.
+     */
+    private static function volunteer_seats() {
+        return class_exists( 'BLC_Gala_Volunteers' ) ? BLC_Gala_Volunteers::count() : 0;
+    }
+
+    /**
+     * Get the number of remaining tickets.
+     */
+    public function get_remaining_count() {
+        $breakdown = $this->get_ticket_breakdown();
+        return $breakdown['remaining'];
     }
 
     /**
@@ -42,9 +76,12 @@ class BLC_Gala_Tickets {
     public function reserve_ticket( $buyer_name, $buyer_email, $quantity = 1 ) {
         global $wpdb;
 
-        $total       = (int) get_option( 'blc_gala_total_tickets', 100 );
-        $manual_sold = (int) get_option( 'blc_gala_manual_sold', 0 );
-        $max         = (int) get_option( 'blc_gala_max_per_order', 1 );
+        $total = (int) get_option( 'blc_gala_total_tickets', 100 );
+        $max   = (int) get_option( 'blc_gala_max_per_order', 1 );
+
+        // Seats already spoken for outside the orders table. Read before the
+        // transaction opens so the locking read below stays as short as possible.
+        $offline = (int) get_option( 'blc_gala_manual_sold', 0 ) + self::volunteer_seats();
 
         if ( $quantity > $max ) {
             return new WP_Error( 'quantity_exceeded', sprintf( 'Maximum %d ticket(s) per order.', $max ), array( 'status' => 400 ) );
@@ -58,7 +95,7 @@ class BLC_Gala_Tickets {
             'completed'
         ) );
 
-        $sold = $db_sold + $manual_sold;
+        $sold = $db_sold + $offline;
 
         if ( $sold + $quantity > $total ) {
             $wpdb->query( 'ROLLBACK' );

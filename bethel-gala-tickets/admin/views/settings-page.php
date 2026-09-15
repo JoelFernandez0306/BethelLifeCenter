@@ -4,24 +4,55 @@
 
     <?php
     $tickets_mgr = new BLC_Gala_Tickets();
-    $remaining   = $tickets_mgr->get_remaining_count();
-    $total       = (int) get_option( 'blc_gala_total_tickets', 100 );
-    $sold        = $total - $remaining;
+    $breakdown   = $tickets_mgr->get_ticket_breakdown();
+
+    $remaining = $breakdown['remaining'];
+    $total     = $breakdown['total'];
+    $sold      = $breakdown['taken'];
     ?>
     <div class="blc-gala-dashboard">
         <div class="blc-gala-stat">
-            <span class="blc-gala-stat-number"><?php echo esc_html( $sold ); ?></span>
-            <span class="blc-gala-stat-label">Tickets Sold</span>
+            <span class="blc-gala-stat-number"><?php echo esc_html( $breakdown['online'] ); ?></span>
+            <span class="blc-gala-stat-label">Sold On This Site</span>
+        </div>
+        <div class="blc-gala-stat">
+            <span class="blc-gala-stat-number"><?php echo esc_html( $breakdown['recorded'] ); ?></span>
+            <span class="blc-gala-stat-label">Previously Recorded</span>
+        </div>
+        <div class="blc-gala-stat">
+            <span class="blc-gala-stat-number"><?php echo esc_html( $breakdown['volunteers'] ); ?></span>
+            <span class="blc-gala-stat-label">Volunteers (Free)</span>
         </div>
         <div class="blc-gala-stat">
             <span class="blc-gala-stat-number"><?php echo esc_html( $remaining ); ?></span>
             <span class="blc-gala-stat-label">Tickets Remaining</span>
         </div>
-        <div class="blc-gala-stat">
-            <span class="blc-gala-stat-number"><?php echo esc_html( $total ); ?></span>
-            <span class="blc-gala-stat-label">Total Tickets</span>
-        </div>
     </div>
+
+    <p class="description" style="margin: 10px 0 0; font-size: 13px;">
+        <?php
+        printf(
+            '%d sold on this site + %d previously recorded + %d volunteer%s = <strong>%d of %d seats taken</strong>, %d remaining.',
+            (int) $breakdown['online'],
+            (int) $breakdown['recorded'],
+            (int) $breakdown['volunteers'],
+            1 === (int) $breakdown['volunteers'] ? '' : 's',
+            (int) $sold,
+            (int) $total,
+            (int) $remaining
+        );
+        ?>
+    </p>
+
+    <?php if ( $sold > $total ) : ?>
+        <div class="notice notice-warning inline" style="margin: 15px 0;">
+            <p>
+                <strong>Heads up:</strong> those entries add up to <?php echo esc_html( $sold ); ?> seats,
+                which is more than the <?php echo esc_html( $total ); ?> total tickets available.
+                The page will show as sold out. Raise "Total Tickets Available" or remove some entries.
+            </p>
+        </div>
+    <?php endif; ?>
 
     <form method="post" action="options.php">
         <?php settings_fields( 'blc_gala_settings' ); ?>
@@ -50,9 +81,15 @@
                 <td><input type="number" id="blc_gala_total_tickets" name="blc_gala_total_tickets" value="<?php echo esc_attr( get_option( 'blc_gala_total_tickets' ) ); ?>" min="1" class="small-text" /></td>
             </tr>
             <tr>
-                <th><label for="blc_gala_manual_sold">Tickets Sold (Manual Adjustment)</label></th>
+                <th><label for="blc_gala_manual_sold">Previously Recorded Sales</label></th>
                 <td><input type="number" id="blc_gala_manual_sold" name="blc_gala_manual_sold" value="<?php echo esc_attr( get_option( 'blc_gala_manual_sold', 0 ) ); ?>" min="0" class="small-text" />
-                <p class="description">Add tickets sold outside this system (e.g., sold before plugin was set up). This is added on top of the <?php echo esc_html( $sold ); ?> ticket(s) already tracked by orders in the system.</p></td>
+                <p class="description">
+                    Tickets sold outside this site &mdash; on the old website, in person, or before this
+                    plugin was installed. Each one subtracts from the tickets remaining.<br />
+                    This site has recorded <strong><?php echo esc_html( $breakdown['online'] ); ?></strong>
+                    order<?php echo 1 === (int) $breakdown['online'] ? '' : 's'; ?> of its own, which
+                    <em>are not</em> included in this number &mdash; do not count them twice.
+                </p></td>
             </tr>
             <tr>
                 <th><label for="blc_gala_ticket_price">Ticket Price ($)</label></th>
@@ -201,6 +238,81 @@
 
         <?php submit_button( 'Save Settings' ); ?>
     </form>
+
+    <hr style="margin: 40px 0 25px;" />
+
+    <?php
+    // ---------------------------------------------------------------------
+    // Volunteers (free admission)
+    // ---------------------------------------------------------------------
+    $volunteers  = BLC_Gala_Volunteers::get_volunteers();
+    $vol_notice  = isset( $_GET['blc_vol_notice'] ) ? sanitize_text_field( wp_unslash( $_GET['blc_vol_notice'] ) ) : '';
+    ?>
+
+    <h2 id="blc-volunteers">Volunteers (Free Admission)</h2>
+    <p class="description" style="max-width: 700px;">
+        Volunteers attend at no charge but still take a seat, so each name added here
+        subtracts one from the tickets remaining. Removing a name puts the seat back.
+    </p>
+
+    <?php if ( $vol_notice === 'added' ) : ?>
+        <div class="notice notice-success is-dismissible"><p>Volunteer added. One seat was subtracted from the tickets remaining.</p></div>
+    <?php elseif ( $vol_notice === 'deleted' ) : ?>
+        <div class="notice notice-success is-dismissible"><p>Volunteer removed. Their seat is available again.</p></div>
+    <?php elseif ( $vol_notice === 'invalid' ) : ?>
+        <div class="notice notice-error is-dismissible"><p>Please enter both a first and last name.</p></div>
+    <?php endif; ?>
+
+    <form method="post" action="" style="margin: 20px 0; padding: 15px 20px; background: #fff; border: 1px solid #c3c4c7; max-width: 700px;">
+        <?php wp_nonce_field( 'blc_vol_add' ); ?>
+        <h3 style="margin-top: 0;">Add a Volunteer</h3>
+        <table class="form-table">
+            <tr>
+                <th><label for="blc_vol_first">First Name</label></th>
+                <td><input type="text" id="blc_vol_first" name="blc_vol_first" class="regular-text" required /></td>
+            </tr>
+            <tr>
+                <th><label for="blc_vol_last">Last Name</label></th>
+                <td><input type="text" id="blc_vol_last" name="blc_vol_last" class="regular-text" required /></td>
+            </tr>
+        </table>
+        <p><button type="submit" name="blc_vol_add" value="1" class="button button-primary">Add Volunteer</button></p>
+    </form>
+
+    <?php if ( empty( $volunteers ) ) : ?>
+        <p><em>No volunteers added yet.</em></p>
+    <?php else : ?>
+        <p><strong><?php echo count( $volunteers ); ?></strong> volunteer<?php echo 1 === count( $volunteers ) ? '' : 's'; ?> &mdash;
+           taking up <?php echo count( $volunteers ); ?> of the <?php echo esc_html( $total ); ?> seats.</p>
+        <table class="wp-list-table widefat fixed striped" style="max-width: 700px;">
+            <thead>
+                <tr>
+                    <th style="width: 40px;">#</th>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th style="width: 100px;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ( $volunteers as $index => $volunteer ) :
+                    $vol_delete = wp_nonce_url(
+                        admin_url( 'admin.php?page=blc-gala-settings&blc_vol_delete=' . rawurlencode( $volunteer['id'] ) ),
+                        'blc_vol_delete'
+                    );
+                    ?>
+                    <tr>
+                        <td><?php echo esc_html( $index + 1 ); ?></td>
+                        <td><?php echo esc_html( $volunteer['first'] ); ?></td>
+                        <td><?php echo esc_html( $volunteer['last'] ); ?></td>
+                        <td>
+                            <a href="<?php echo esc_url( $vol_delete ); ?>" class="button blc-qp-delete"
+                               onclick="return confirm('Remove <?php echo esc_js( BLC_Gala_Volunteers::full_name( $volunteer ) ); ?> from the volunteer list? This frees up one seat.');">Remove</a>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    <?php endif; ?>
 
     <hr style="margin: 40px 0 25px;" />
 
