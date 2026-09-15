@@ -42,6 +42,14 @@ class BLC_Gala_Admin {
             exit;
         }
 
+        if ( isset( $_GET['blc_upd_check'] ) ) {
+            check_admin_referer( 'blc_upd_check' );
+
+            BLC_Gala_Updater::flush();
+            wp_safe_redirect( admin_url( 'admin.php?page=blc-gala-settings&blc_upd_notice=checked#blc-updates' ) );
+            exit;
+        }
+
         $this->handle_volunteer_actions();
     }
 

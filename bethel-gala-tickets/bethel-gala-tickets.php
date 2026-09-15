@@ -46,6 +46,11 @@ function blc_gala_init() {
     require_once BLC_GALA_PLUGIN_DIR . 'includes/class-blc-scanner.php';
     require_once BLC_GALA_PLUGIN_DIR . 'includes/class-blc-quickpay.php';
     require_once BLC_GALA_PLUGIN_DIR . 'includes/class-blc-volunteers.php';
+    require_once BLC_GALA_PLUGIN_DIR . 'includes/class-blc-updater.php';
+
+    // Serve plugin updates from GitHub releases. Registered outside the
+    // is_admin() block so scheduled auto-updates work from cron too.
+    new BLC_Gala_Updater( __FILE__ );
 
     // Apply any pending schema changes when the plugin was updated in place.
     require_once BLC_GALA_PLUGIN_DIR . 'includes/class-blc-activator.php';

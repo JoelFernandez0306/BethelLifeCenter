@@ -243,6 +243,82 @@
 
     <?php
     // ---------------------------------------------------------------------
+    // Plugin updates (served from GitHub releases)
+    // ---------------------------------------------------------------------
+    $upd_checked = isset( $_GET['blc_upd_notice'] ) && 'checked' === $_GET['blc_upd_notice'];
+    $updater     = new BLC_Gala_Updater( BLC_GALA_PLUGIN_DIR . 'bethel-gala-tickets.php' );
+    $release     = $updater->get_latest_release();
+
+    $latest        = $release['version'];
+    $update_ready  = $latest && version_compare( $latest, BLC_GALA_VERSION, '>' );
+    $check_url     = wp_nonce_url( admin_url( 'admin.php?page=blc-gala-settings&blc_upd_check=1#blc-updates' ), 'blc_upd_check' );
+    ?>
+
+    <h2 id="blc-updates">Plugin Updates</h2>
+    <p class="description" style="max-width: 700px;">
+        This plugin updates itself from GitHub. When a new version is released it shows up
+        under <strong>Dashboard &rarr; Updates</strong> and on the Plugins screen, just like
+        any other plugin &mdash; no files to upload.
+    </p>
+
+    <?php if ( $upd_checked ) : ?>
+        <div class="notice notice-success is-dismissible"><p>Checked for updates.</p></div>
+    <?php endif; ?>
+
+    <table class="form-table">
+        <tr>
+            <th>Installed Version</th>
+            <td><code><?php echo esc_html( BLC_GALA_VERSION ); ?></code></td>
+        </tr>
+        <tr>
+            <th>Latest Released</th>
+            <td>
+                <?php if ( $latest ) : ?>
+                    <code><?php echo esc_html( $latest ); ?></code>
+                    <?php if ( $update_ready ) : ?>
+                        <span style="color:#b32d2e;font-weight:600;margin-left:8px;">Update available</span>
+                        <p class="description">
+                            <a href="<?php echo esc_url( admin_url( 'plugins.php' ) ); ?>">Go to the Plugins screen</a>
+                            to install it.
+                        </p>
+                    <?php else : ?>
+                        <span style="color:#0a7c00;font-weight:600;margin-left:8px;">Up to date</span>
+                    <?php endif; ?>
+                <?php else : ?>
+                    <em>No release published yet.</em>
+                    <p class="description">
+                        Once the first release is tagged on GitHub it will appear here.
+                    </p>
+                <?php endif; ?>
+            </td>
+        </tr>
+        <tr>
+            <th>Check Now</th>
+            <td>
+                <a href="<?php echo esc_url( $check_url ); ?>" class="button">Check for Updates</a>
+                <p class="description">
+                    Updates are checked automatically a few times a day. This forces an immediate check.
+                    &nbsp;&middot;&nbsp;
+                    <a href="<?php echo esc_url( BLC_Gala_Updater::releases_url() ); ?>" target="_blank">View all releases</a>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <th>Automatic Updates</th>
+            <td>
+                <p class="description" style="margin-top: 4px;">
+                    To have new versions install themselves with no clicking at all, go to the
+                    <a href="<?php echo esc_url( admin_url( 'plugins.php' ) ); ?>">Plugins screen</a>
+                    and click <strong>Enable auto-updates</strong> next to this plugin.
+                </p>
+            </td>
+        </tr>
+    </table>
+
+    <hr style="margin: 40px 0 25px;" />
+
+    <?php
+    // ---------------------------------------------------------------------
     // Volunteers (free admission)
     // ---------------------------------------------------------------------
     $volunteers  = BLC_Gala_Volunteers::get_volunteers();
