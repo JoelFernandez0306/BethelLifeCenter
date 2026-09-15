@@ -1,24 +1,26 @@
 name: Release plugin
 
-# Publishing a version tag builds the plugin ZIP and attaches it to a GitHub
-# Release. The plugin's built-in updater watches that release, so the live site
-# picks the new version up on its own.
+# Releases are cut automatically. Bumping the plugin's version and pushing is
+# all it takes: this workflow notices the new version, builds the plugin ZIP,
+# and publishes the release that the plugin's built-in updater watches.
 #
-#   git tag v1.4.0 && git push origin v1.4.0
+# Nothing is released until the version actually changes, so ordinary commits
+# never reach the live site.
+#
+# Pushing a tag by hand (git tag v1.4.0 && git push origin v1.4.0) still works
+# and forces a release, which also covers creating one through GitHub's web form
+# since that fires a tag push too.
 
 on:
-  # Covers both ways of cutting a release: pushing a tag from a clone, and
-  # using the "Draft a new release" form on GitHub, which creates the tag for
-  # you. Whichever fires, the ZIP gets attached to the release.
   push:
+    branches:
+      - 'claude/gala-ticket-sales-page-v0DF4'
+      - 'master'
     tags:
       - 'v*'
-  release:
-    types: [published]
   workflow_dispatch:
 
-# If one release triggers both events, keep only the later run so the ZIP is
-# not uploaded twice.
+# Releases for the same ref should not run on top of each other.
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: true
@@ -33,37 +35,71 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check the tag matches the plugin version
-        # WordPress reads the version from the plugin header, while the updater
-        # compares against the constant. If either disagrees with the tag, the
-        # site would be offered an "update" that never resolves — so fail here
-        # rather than ship a release that nags forever.
+      - name: Read the plugin version
+        id: version
+        # WordPress reads the version from the plugin header while the updater
+        # compares against the constant. If they disagree the site would be
+        # offered an update that can never finish, so stop here instead.
         run: |
           set -euo pipefail
           PLUGIN_FILE=bethel-gala-tickets/bethel-gala-tickets.php
-          TAG="${GITHUB_REF_NAME#v}"
 
-          HEADER_VERSION=$(sed -n "s/^ \* Version:[[:space:]]*\(.*\)$/\1/p" "$PLUGIN_FILE" | head -1 | tr -d '[:space:]')
-          CONST_VERSION=$(sed -n "s/.*BLC_GALA_VERSION'[[:space:]]*,[[:space:]]*'\([^']*\)'.*/\1/p" "$PLUGIN_FILE" | head -1)
+          HEADER=$(sed -n "s/^ \* Version:[[:space:]]*\(.*\)$/\1/p" "$PLUGIN_FILE" | head -1 | tr -d '[:space:]')
+          CONST=$(sed -n "s/.*BLC_GALA_VERSION'[[:space:]]*,[[:space:]]*'\([^']*\)'.*/\1/p" "$PLUGIN_FILE" | head -1)
 
-          echo "tag=$TAG  header=$HEADER_VERSION  constant=$CONST_VERSION"
+          echo "header=$HEADER constant=$CONST"
 
-          if [ "$TAG" != "$HEADER_VERSION" ]; then
-            echo "::error::Tag $TAG does not match the plugin header version $HEADER_VERSION"
+          if [ -z "$HEADER" ] || [ -z "$CONST" ]; then
+            echo "::error::Could not read the plugin version"
             exit 1
           fi
-          if [ "$TAG" != "$CONST_VERSION" ]; then
-            echo "::error::Tag $TAG does not match BLC_GALA_VERSION $CONST_VERSION"
+          if [ "$HEADER" != "$CONST" ]; then
+            echo "::error::Plugin header says $HEADER but BLC_GALA_VERSION says $CONST — make them match"
             exit 1
+          fi
+
+          # A hand-pushed tag has to agree with the version in the code.
+          if [ "$GITHUB_REF_TYPE" = "tag" ] && [ "${GITHUB_REF_NAME#v}" != "$HEADER" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match plugin version $HEADER"
+            exit 1
+          fi
+
+          echo "version=$HEADER" >> "$GITHUB_OUTPUT"
+
+      - name: Decide whether to publish
+        id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+        # An ordinary push only releases when the version is one we have not
+        # published yet, so repeated pushes at the same version do nothing.
+        # A tag push always publishes.
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.version.outputs.version }}"
+
+          if [ "$GITHUB_REF_TYPE" = "tag" ] || [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "Tag or manual run — publishing v$VERSION"
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "v$VERSION is already released — nothing to do"
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "v$VERSION has not been released yet — publishing"
+            echo "publish=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Check PHP syntax
+        if: steps.decide.outputs.publish == 'true'
         run: |
           set -euo pipefail
           find bethel-gala-tickets -name '*.php' -print0 | xargs -0 -n1 php -l > /dev/null
           echo "PHP syntax OK"
 
       - name: Build the plugin zip
+        if: steps.decide.outputs.publish == 'true'
         # The archive must unpack to a folder named exactly bethel-gala-tickets,
         # because WordPress drops that folder straight into wp-content/plugins.
         # GitHub's own source archive wraps everything in a repo-named folder,
@@ -79,7 +115,11 @@ jobs:
           unzip -l bethel-gala-tickets.zip | head -5
 
       - name: Publish the release
+        if: steps.decide.outputs.publish == 'true'
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: v${{ steps.version.outputs.version }}
+          target_commitish: ${{ github.sha }}
           files: bethel-gala-tickets.zip
           generate_release_notes: true
