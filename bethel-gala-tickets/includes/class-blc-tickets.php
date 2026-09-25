@@ -13,21 +13,45 @@ class BLC_Gala_Tickets {
     }
 
     /**
+     * Prefix marking an order that was typed in by hand rather than sold
+     * through this site. These are kept as a record of who bought and are
+     * deliberately left out of the seat count — the "Previously Recorded
+     * Sales" setting is what adjusts the tickets remaining.
+     */
+    const RECORDED_PREFIX = 'MANUAL:';
+
+    /**
      * Every seat accounted for, broken out by where it came from.
      *
-     * Three things consume the same pool of seats: orders taken through this
-     * site, sales recorded by hand (tickets sold before this site existed),
-     * and volunteers attending free.
+     * Three things consume seats: orders taken through this site, the
+     * previously-recorded sales figure in settings, and volunteers attending
+     * free. Sales typed in on the Orders screen are reported separately and
+     * do not consume a seat, so entering one there and counting it in the
+     * settings figure cannot double-book the same person.
      *
-     * @return array {total, online, recorded, volunteers, taken, remaining}
+     * @return array {total, online, recorded, volunteers, taken, remaining, recorded_orders}
      */
     public function get_ticket_breakdown() {
         global $wpdb;
 
+        $like = $wpdb->esc_like( self::RECORDED_PREFIX ) . '%';
+
         $online = (int) $wpdb->get_var( $wpdb->prepare(
-            "SELECT COALESCE(SUM(quantity), 0) FROM {$this->orders_table} WHERE order_type = %s AND status = %s",
+            "SELECT COALESCE(SUM(quantity), 0) FROM {$this->orders_table}
+             WHERE order_type = %s AND status = %s
+               AND ( paypal_order_id IS NULL OR paypal_order_id NOT LIKE %s )",
             'ticket',
-            'completed'
+            'completed',
+            $like
+        ) );
+
+        // Shown for information only; intentionally not added to $taken.
+        $recorded_orders = (int) $wpdb->get_var( $wpdb->prepare(
+            "SELECT COALESCE(SUM(quantity), 0) FROM {$this->orders_table}
+             WHERE order_type = %s AND status = %s AND paypal_order_id LIKE %s",
+            'ticket',
+            'completed',
+            $like
         ) );
 
         $total      = (int) get_option( 'blc_gala_total_tickets', 100 );
@@ -36,12 +60,13 @@ class BLC_Gala_Tickets {
         $taken      = $online + $recorded + $volunteers;
 
         return array(
-            'total'      => $total,
-            'online'     => $online,
-            'recorded'   => $recorded,
-            'volunteers' => $volunteers,
-            'taken'      => $taken,
-            'remaining'  => max( 0, $total - $taken ),
+            'total'           => $total,
+            'online'          => $online,
+            'recorded'        => $recorded,
+            'volunteers'      => $volunteers,
+            'taken'           => $taken,
+            'remaining'       => max( 0, $total - $taken ),
+            'recorded_orders' => $recorded_orders,
         );
     }
 
@@ -90,9 +115,13 @@ class BLC_Gala_Tickets {
         $wpdb->query( 'START TRANSACTION' );
 
         $db_sold = (int) $wpdb->get_var( $wpdb->prepare(
-            "SELECT COALESCE(SUM(quantity), 0) FROM {$this->orders_table} WHERE order_type = %s AND status = %s FOR UPDATE",
+            "SELECT COALESCE(SUM(quantity), 0) FROM {$this->orders_table}
+             WHERE order_type = %s AND status = %s
+               AND ( paypal_order_id IS NULL OR paypal_order_id NOT LIKE %s )
+             FOR UPDATE",
             'ticket',
-            'completed'
+            'completed',
+            $wpdb->esc_like( self::RECORDED_PREFIX ) . '%'
         ) );
 
         $sold = $db_sold + $offline;
@@ -366,8 +395,14 @@ class BLC_Gala_Tickets {
      * website, in person, or before this plugin existed.
      *
      * Saved as a completed ticket order with real ticket codes, so the buyer
-     * appears in the orders list, can be checked in at the door like anyone
-     * else, and draws down the remaining ticket count.
+     * appears in the orders list and can be checked in at the door. It does
+     * not consume a seat: the "Previously Recorded Sales" setting is what
+     * adjusts the tickets remaining, so a sale entered here and counted there
+     * is not charged against the total twice.
+     *
+     * Every field is optional. These are sales that already happened, often
+     * with patchy details, so whatever is known gets saved and the rest is
+     * left blank rather than blocking the entry.
      *
      * @param array $args buyer_name, buyer_email, quantity, amount_paid, method, sold_at
      * @return array|WP_Error {order, tickets}
@@ -380,7 +415,7 @@ class BLC_Gala_Tickets {
             'buyer_email' => '',
             'quantity'    => 1,
             'amount_paid' => '',
-            'method'      => 'Cash',
+            'method'      => '',
             'sold_at'     => '',
         ) );
 
@@ -388,11 +423,9 @@ class BLC_Gala_Tickets {
         $email = sanitize_email( $args['buyer_email'] );
         $qty   = max( 1, absint( $args['quantity'] ) );
 
-        if ( '' === $name ) {
-            return new WP_Error( 'missing_name', 'Please enter the buyer\'s first and last name.' );
-        }
-        if ( '' === $email || ! is_email( $email ) ) {
-            return new WP_Error( 'invalid_email', 'Please enter a valid email address.' );
+        // A typo is worth catching, but a blank is fine.
+        if ( '' !== $email && ! is_email( $email ) ) {
+            return new WP_Error( 'invalid_email', 'That email address does not look right. Leave it blank if you do not have it.' );
         }
 
         // Fall back to the current ticket price, but let the amount be set by
@@ -420,9 +453,9 @@ class BLC_Gala_Tickets {
             'buyer_email' => $email,
             'quantity'    => $qty,
             'amount_paid' => $amount,
-            // Marked so the orders list can tell a recorded sale apart from a
-            // live PayPal one.
-            'paypal_order_id' => 'MANUAL:' . ( '' !== $method ? $method : 'Other' ),
+            // Marks this as typed in by hand, which both labels it in the
+            // orders list and keeps it out of the seat count.
+            'paypal_order_id' => self::RECORDED_PREFIX . ( '' !== $method ? $method : 'Recorded' ),
             'status'      => 'completed',
             'created_at'  => $sold_at,
         ) );

@@ -94,7 +94,8 @@ class BLC_Gala_Admin {
 
         $notice = 'added';
 
-        if ( ! empty( $_POST['blc_order_send'] ) ) {
+        // Only worth mailing when an address was actually given.
+        if ( ! empty( $_POST['blc_order_send'] ) && ! empty( $result['order']->buyer_email ) ) {
             $mailer = new BLC_Gala_Email();
             $mailer->send_ticket_email( $result['order'], $result['tickets'] );
             $notice = 'emailed';

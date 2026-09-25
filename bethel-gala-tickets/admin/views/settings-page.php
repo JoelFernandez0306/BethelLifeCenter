@@ -44,6 +44,20 @@
         ?>
     </p>
 
+    <?php if ( ! empty( $breakdown['recorded_orders'] ) ) : ?>
+        <p class="description" style="margin: 6px 0 0; font-size: 13px;">
+            <?php
+            printf(
+                'Separately, <strong>%d ticket%s</strong> %s been typed into the Orders screen as past sales. Those are kept as a record of who bought and are <em>not</em> counted above &mdash; use the box below to move the counter.',
+                (int) $breakdown['recorded_orders'],
+                1 === (int) $breakdown['recorded_orders'] ? '' : 's',
+                1 === (int) $breakdown['recorded_orders'] ? 'has' : 'have'
+            );
+            ?>
+            <a href="<?php echo esc_url( admin_url( 'admin.php?page=blc-gala-orders' ) ); ?>">View orders</a>
+        </p>
+    <?php endif; ?>
+
     <?php if ( $sold > $total ) : ?>
         <div class="notice notice-warning inline" style="margin: 15px 0;">
             <p>

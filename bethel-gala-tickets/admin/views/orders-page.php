@@ -21,7 +21,7 @@
     ?>
 
     <?php if ( 'added' === $order_notice ) : ?>
-        <div class="notice notice-success is-dismissible"><p>Sale recorded. Ticket codes were generated so this guest can be scanned at the door.</p></div>
+        <div class="notice notice-success is-dismissible"><p>Sale recorded with its own ticket codes. The tickets remaining count is unchanged &mdash; adjust <strong>Previously Recorded Sales</strong> in Settings if you want it to move.</p></div>
     <?php elseif ( 'emailed' === $order_notice ) : ?>
         <div class="notice notice-success is-dismissible"><p>Sale recorded and the tickets were emailed to the buyer.</p></div>
     <?php elseif ( 'error' === $order_notice ) : ?>
@@ -34,42 +34,44 @@
 
         <p class="description" style="max-width: 720px;">
             For tickets sold on the old website, in person, or before this plugin was set up.
-            The sale is saved as a normal order with its own ticket codes, so the guest can be
-            scanned in at the door and the tickets remaining count goes down by the quantity.
+            Fill in whatever you know &mdash; nothing here is required. The sale is saved with its
+            own ticket codes, so the guest can still be scanned in at the door.
         </p>
 
-        <?php if ( $manual_sold > 0 ) : ?>
-            <div class="notice notice-warning inline" style="margin: 12px 0; max-width: 720px;">
-                <p>
-                    <strong>Careful about counting twice.</strong> Settings still has
-                    <strong>Previously Recorded Sales</strong> set to <strong><?php echo esc_html( $manual_sold ); ?></strong>.
-                    Every sale you enter here is counted on its own, so lower that number by the same
-                    amount as you go &mdash; or set it to 0 once everything has been entered here.
-                    <a href="<?php echo esc_url( admin_url( 'admin.php?page=blc-gala-settings' ) ); ?>">Open Settings</a>
-                </p>
-            </div>
-        <?php endif; ?>
+        <div class="notice notice-info inline" style="margin: 12px 0; max-width: 720px;">
+            <p>
+                <strong>This does not change the tickets remaining.</strong> Entries here are a record
+                of who bought. To adjust the counter, set
+                <strong>Previously Recorded Sales</strong> in
+                <a href="<?php echo esc_url( admin_url( 'admin.php?page=blc-gala-settings' ) ); ?>">Settings</a>
+                <?php if ( $manual_sold > 0 ) : ?>
+                    &mdash; currently <strong><?php echo esc_html( $manual_sold ); ?></strong>.
+                <?php else : ?>
+                    &mdash; currently <strong>0</strong>.
+                <?php endif; ?>
+            </p>
+        </div>
 
         <form method="post" action="">
             <?php wp_nonce_field( 'blc_order_add' ); ?>
             <table class="form-table">
                 <tr>
-                    <th><label for="blc_order_first">Name <span style="color:#b32d2e;">*</span></label></th>
+                    <th><label for="blc_order_first">Name</label></th>
                     <td>
-                        <input type="text" id="blc_order_first" name="blc_order_first" placeholder="First name" required />
-                        <input type="text" id="blc_order_last" name="blc_order_last" placeholder="Last name" required />
+                        <input type="text" id="blc_order_first" name="blc_order_first" placeholder="First name" />
+                        <input type="text" id="blc_order_last" name="blc_order_last" placeholder="Last name" />
                     </td>
                 </tr>
                 <tr>
-                    <th><label for="blc_order_email">Email <span style="color:#b32d2e;">*</span></label></th>
+                    <th><label for="blc_order_email">Email</label></th>
                     <td>
-                        <input type="email" id="blc_order_email" name="blc_order_email" class="regular-text" required />
-                        <p class="description">Where the tickets go if you choose to email them below.</p>
+                        <input type="email" id="blc_order_email" name="blc_order_email" class="regular-text" />
+                        <p class="description">Only needed if you want to email them their tickets.</p>
                     </td>
                 </tr>
                 <tr>
-                    <th><label for="blc_order_qty">Tickets <span style="color:#b32d2e;">*</span></label></th>
-                    <td><input type="number" id="blc_order_qty" name="blc_order_qty" class="small-text" min="1" value="1" required /></td>
+                    <th><label for="blc_order_qty">Tickets</label></th>
+                    <td><input type="number" id="blc_order_qty" name="blc_order_qty" class="small-text" min="1" value="1" /></td>
                 </tr>
                 <tr>
                     <th><label for="blc_order_amount">Amount Paid ($)</label></th>
@@ -89,6 +91,7 @@
                     <th><label for="blc_order_method">Paid With</label></th>
                     <td>
                         <select id="blc_order_method" name="blc_order_method">
+                            <option value="">Not recorded</option>
                             <option value="Cash">Cash</option>
                             <option value="Check">Check</option>
                             <option value="PayPal">PayPal</option>
@@ -106,8 +109,9 @@
                             Send this buyer their QR code tickets now
                         </label>
                         <p class="description">
-                            Useful when the old site's tickets no longer work. Leave unticked to record the
-                            sale quietly &mdash; you can always use <strong>Resend Email</strong> on the row later.
+                            Useful when the old site's tickets no longer work. Skipped automatically if
+                            you left the email blank &mdash; you can always use <strong>Resend Email</strong>
+                            on the row later.
                         </p>
                     </td>
                 </tr>
@@ -154,8 +158,8 @@
                 <?php foreach ( $orders as $order ) : ?>
                     <tr>
                         <td><?php echo esc_html( date_i18n( 'M j, Y g:i A', strtotime( $order->created_at ) ) ); ?></td>
-                        <td><?php echo esc_html( $order->buyer_name ); ?></td>
-                        <td><?php echo esc_html( $order->buyer_email ); ?></td>
+                        <td><?php echo $order->buyer_name ? esc_html( $order->buyer_name ) : '<span style="color:#888;">—</span>'; ?></td>
+                        <td><?php echo $order->buyer_email ? esc_html( $order->buyer_email ) : '<span style="color:#888;">—</span>'; ?></td>
                         <td><span class="blc-badge blc-badge-<?php echo esc_attr( $order->order_type ); ?>"><?php echo esc_html( ucfirst( $order->order_type ) ); ?></span></td>
                         <td><?php echo esc_html( $order->quantity ); ?></td>
                         <td>$<?php echo esc_html( number_format( $order->amount_paid, 2 ) ); ?></td>
@@ -187,7 +191,7 @@
                             ?>
                         </td>
                         <td class="blc-col-actions">
-                            <?php if ( $order->status === 'completed' ) : ?>
+                            <?php if ( $order->status === 'completed' && $order->buyer_email ) : ?>
                                 <button type="button" class="button blc-resend-btn" data-order-id="<?php echo esc_attr( $order->id ); ?>" data-email="<?php echo esc_attr( $order->buyer_email ); ?>">Resend Email</button>
                             <?php else : ?>
                                 —
