@@ -51,6 +51,57 @@ class BLC_Gala_Admin {
         }
 
         $this->handle_volunteer_actions();
+        $this->handle_order_actions();
+    }
+
+    /**
+     * Record a sale made outside this site, submitted from the Orders screen.
+     */
+    private function handle_order_actions() {
+        if ( ! isset( $_POST['blc_order_add'] ) ) {
+            return;
+        }
+
+        check_admin_referer( 'blc_order_add' );
+
+        $first = isset( $_POST['blc_order_first'] ) ? wp_unslash( $_POST['blc_order_first'] ) : '';
+        $last  = isset( $_POST['blc_order_last'] ) ? wp_unslash( $_POST['blc_order_last'] ) : '';
+
+        // A check or confirmation number, when given, rides along with the
+        // method so the Payment column reads "Check #1042".
+        $method = isset( $_POST['blc_order_method'] ) ? sanitize_text_field( wp_unslash( $_POST['blc_order_method'] ) ) : 'Cash';
+        $ref    = isset( $_POST['blc_order_ref'] ) ? sanitize_text_field( wp_unslash( $_POST['blc_order_ref'] ) ) : '';
+
+        if ( '' !== trim( $ref ) ) {
+            $method .= ' #' . trim( $ref );
+        }
+
+        $tickets_mgr = new BLC_Gala_Tickets();
+        $result      = $tickets_mgr->create_recorded_order( array(
+            'buyer_name'  => trim( $first . ' ' . $last ),
+            'buyer_email' => isset( $_POST['blc_order_email'] ) ? wp_unslash( $_POST['blc_order_email'] ) : '',
+            'quantity'    => isset( $_POST['blc_order_qty'] ) ? wp_unslash( $_POST['blc_order_qty'] ) : 1,
+            'amount_paid' => isset( $_POST['blc_order_amount'] ) ? wp_unslash( $_POST['blc_order_amount'] ) : '',
+            'method'      => $method,
+            'sold_at'     => isset( $_POST['blc_order_date'] ) ? wp_unslash( $_POST['blc_order_date'] ) : '',
+        ) );
+
+        if ( is_wp_error( $result ) ) {
+            set_transient( 'blc_order_error', $result->get_error_message(), MINUTE_IN_SECONDS );
+            wp_safe_redirect( admin_url( 'admin.php?page=blc-gala-orders&blc_order_notice=error' ) );
+            exit;
+        }
+
+        $notice = 'added';
+
+        if ( ! empty( $_POST['blc_order_send'] ) ) {
+            $mailer = new BLC_Gala_Email();
+            $mailer->send_ticket_email( $result['order'], $result['tickets'] );
+            $notice = 'emailed';
+        }
+
+        wp_safe_redirect( admin_url( 'admin.php?page=blc-gala-orders&blc_order_notice=' . $notice ) );
+        exit;
     }
 
     /**

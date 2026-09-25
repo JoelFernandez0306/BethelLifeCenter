@@ -150,3 +150,52 @@
     background: #b32d2e !important;
     color: #fff !important;
 }
+
+/* ==========================================================================
+   Record a Past Sale
+   ========================================================================== */
+
+.blc-add-order {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 0 20px;
+    margin: 15px 0;
+    max-width: 860px;
+}
+
+.blc-add-order > summary {
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 14px 0;
+    list-style-position: inside;
+}
+
+.blc-add-order[open] > summary {
+    border-bottom: 1px solid #e0e0e0;
+    margin-bottom: 10px;
+}
+
+.blc-add-order .form-table th {
+    width: 150px;
+    padding: 12px 10px 12px 0;
+}
+
+.blc-add-order input[type="text"],
+.blc-add-order input[type="email"] {
+    max-width: 100%;
+}
+
+/* Marks an order typed in by hand rather than taken through the site. */
+.blc-recorded-tag {
+    display: inline-block;
+    background: #f0f0f1;
+    color: #50575e;
+    border-radius: 3px;
+    padding: 1px 6px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    vertical-align: middle;
+}

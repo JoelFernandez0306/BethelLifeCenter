@@ -362,6 +362,107 @@ class BLC_Gala_Tickets {
     }
 
     /**
+     * Record a sale that happened somewhere other than this site — on the old
+     * website, in person, or before this plugin existed.
+     *
+     * Saved as a completed ticket order with real ticket codes, so the buyer
+     * appears in the orders list, can be checked in at the door like anyone
+     * else, and draws down the remaining ticket count.
+     *
+     * @param array $args buyer_name, buyer_email, quantity, amount_paid, method, sold_at
+     * @return array|WP_Error {order, tickets}
+     */
+    public function create_recorded_order( $args ) {
+        global $wpdb;
+
+        $args = wp_parse_args( $args, array(
+            'buyer_name'  => '',
+            'buyer_email' => '',
+            'quantity'    => 1,
+            'amount_paid' => '',
+            'method'      => 'Cash',
+            'sold_at'     => '',
+        ) );
+
+        $name  = sanitize_text_field( $args['buyer_name'] );
+        $email = sanitize_email( $args['buyer_email'] );
+        $qty   = max( 1, absint( $args['quantity'] ) );
+
+        if ( '' === $name ) {
+            return new WP_Error( 'missing_name', 'Please enter the buyer\'s first and last name.' );
+        }
+        if ( '' === $email || ! is_email( $email ) ) {
+            return new WP_Error( 'invalid_email', 'Please enter a valid email address.' );
+        }
+
+        // Fall back to the current ticket price, but let the amount be set by
+        // hand: past sales may have been at a different price.
+        if ( '' === $args['amount_paid'] || null === $args['amount_paid'] ) {
+            $amount = (float) get_option( 'blc_gala_ticket_price', 50.00 ) * $qty;
+        } else {
+            $amount = round( floatval( $args['amount_paid'] ), 2 );
+        }
+
+        if ( $amount < 0 ) {
+            return new WP_Error( 'invalid_amount', 'Amount cannot be negative.' );
+        }
+
+        $timestamp = $args['sold_at'] ? strtotime( $args['sold_at'] ) : false;
+        $sold_at   = $timestamp ? gmdate( 'Y-m-d H:i:s', $timestamp ) : current_time( 'mysql' );
+
+        $order_uuid = wp_generate_uuid4();
+        $method     = sanitize_text_field( $args['method'] );
+
+        $inserted = $wpdb->insert( $this->orders_table, array(
+            'order_uuid'  => $order_uuid,
+            'order_type'  => 'ticket',
+            'buyer_name'  => $name,
+            'buyer_email' => $email,
+            'quantity'    => $qty,
+            'amount_paid' => $amount,
+            // Marked so the orders list can tell a recorded sale apart from a
+            // live PayPal one.
+            'paypal_order_id' => 'MANUAL:' . ( '' !== $method ? $method : 'Other' ),
+            'status'      => 'completed',
+            'created_at'  => $sold_at,
+        ) );
+
+        if ( ! $inserted ) {
+            return new WP_Error( 'db_error', 'Could not save the order.' );
+        }
+
+        $order_id = $wpdb->insert_id;
+
+        // Real ticket codes, so these guests scan at the door like everyone else.
+        $tickets = array();
+        for ( $i = 0; $i < $qty; $i++ ) {
+            $code = strtoupper( substr( md5( $order_uuid . $i . wp_generate_password( 12, false ) ), 0, 12 ) );
+
+            $wpdb->insert( $this->tickets_table, array(
+                'order_id'      => $order_id,
+                'ticket_code'   => $code,
+                'attendee_name' => $name,
+                'created_at'    => $sold_at,
+            ) );
+
+            $tickets[] = array(
+                'ticket_id'   => $wpdb->insert_id,
+                'ticket_code' => $code,
+            );
+        }
+
+        $order = $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM {$this->orders_table} WHERE id = %d",
+            $order_id
+        ) );
+
+        return array(
+            'order'   => $order,
+            'tickets' => $tickets,
+        );
+    }
+
+    /**
      * Get all orders with optional filtering.
      */
     public function get_orders( $args = array() ) {
