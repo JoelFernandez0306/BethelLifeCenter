@@ -1,0 +1,883 @@
+/* ==========================================================================
+   Always on Mission Gala — Frontend Styles
+   Designed to work inside Divi Builder and inherit parent theme styles.
+   ========================================================================== */
+
+.blc-gala-wrapper {
+    --blc-accent: #C9A84C;
+    --blc-secondary: #1B2A4A;
+    --blc-text: #333333;
+    --blc-text-light: #666666;
+    --blc-bg: #ffffff;
+    --blc-bg-light: #f9f6ee;
+    --blc-border: #e0d9c8;
+    --blc-radius: 8px;
+
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: inherit;
+    color: var(--blc-text);
+    line-height: 1.6;
+}
+
+/* Hero Section */
+.blc-gala-hero {
+    text-align: center;
+    padding: 40px 20px;
+    background: var(--blc-secondary);
+    border-radius: var(--blc-radius);
+    margin-bottom: 30px;
+}
+
+.blc-gala-title {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 2.5em;
+    color: var(--blc-accent) !important;
+    margin: 0 0 10px !important;
+    padding: 0 !important;
+    letter-spacing: 1px;
+    line-height: 1.2 !important;
+}
+
+.blc-gala-tagline {
+    font-size: 1.2em;
+    color: #ffffff !important;
+    margin: 0 0 10px !important;
+    font-style: italic;
+}
+
+.blc-gala-date {
+    font-size: 1.1em;
+    color: var(--blc-accent) !important;
+    margin: 15px 0 0 !important;
+    font-weight: 600;
+}
+
+/* Countdown Timer */
+.blc-gala-countdown {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+.blc-countdown-item {
+    background: var(--blc-secondary);
+    border-radius: var(--blc-radius);
+    padding: 15px 20px;
+    text-align: center;
+    min-width: 80px;
+}
+
+.blc-countdown-number {
+    display: block;
+    font-size: 2em;
+    font-weight: 700;
+    color: var(--blc-accent);
+    font-family: Georgia, serif;
+    line-height: 1.2;
+}
+
+.blc-countdown-label {
+    display: block;
+    font-size: 0.75em;
+    color: #ffffff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 5px;
+}
+
+/* Ticket Counter / Progress Bar */
+.blc-gala-counter {
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.blc-counter-bar-wrapper {
+    background: #e8e2d4;
+    border-radius: 20px;
+    height: 24px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.blc-counter-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--blc-accent), #e0c068);
+    border-radius: 20px;
+    transition: width 0.8s ease-in-out;
+    min-width: 2%;
+}
+
+.blc-counter-text {
+    font-size: 1.1em;
+    color: var(--blc-text-light) !important;
+    margin: 0 !important;
+}
+
+#blc-remaining-count {
+    font-weight: 700;
+    color: var(--blc-secondary);
+    font-size: 1.3em;
+}
+
+/* Sections */
+.blc-gala-section {
+    background: var(--blc-bg);
+    border: 1px solid var(--blc-border);
+    border-radius: var(--blc-radius);
+    padding: 30px;
+    margin-bottom: 30px;
+}
+
+.blc-gala-section-title {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 1.6em;
+    color: var(--blc-secondary) !important;
+    margin: 0 0 5px !important;
+    padding: 0 0 10px !important;
+    border-bottom: 2px solid var(--blc-accent);
+}
+
+.blc-gala-price {
+    font-size: 1.4em;
+    color: var(--blc-accent) !important;
+    font-weight: 700;
+    margin: 15px 0 20px !important;
+}
+
+.blc-gala-description {
+    color: var(--blc-text-light) !important;
+    margin-bottom: 20px !important;
+}
+
+/* Forms */
+.blc-gala-form {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.blc-form-row {
+    display: flex;
+    gap: 15px;
+}
+
+.blc-form-half {
+    flex: 1;
+}
+
+.blc-form-group {
+    margin-bottom: 20px;
+}
+
+.blc-form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--blc-text);
+    font-size: 0.95em;
+}
+
+.blc-required {
+    color: #c0392b;
+}
+
+.blc-form-group input[type="text"],
+.blc-form-group input[type="email"],
+.blc-form-group input[type="number"] {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid var(--blc-border);
+    border-radius: var(--blc-radius);
+    font-size: 1em;
+    font-family: inherit;
+    color: var(--blc-text);
+    background: var(--blc-bg);
+    box-sizing: border-box;
+    transition: border-color 0.2s ease;
+}
+
+.blc-form-group input:focus,
+.blc-form-group select:focus {
+    outline: none;
+    border-color: var(--blc-accent);
+    box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.2);
+}
+
+.blc-form-group select {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid var(--blc-border);
+    border-radius: var(--blc-radius);
+    font-size: 1em;
+    font-family: inherit;
+    color: var(--blc-text);
+    background: var(--blc-bg);
+    box-sizing: border-box;
+    cursor: pointer;
+    appearance: auto;
+}
+
+.blc-form-hint {
+    font-size: 0.85em;
+    color: var(--blc-text-light) !important;
+    margin: 6px 0 0 !important;
+    font-style: italic;
+}
+
+.blc-form-total {
+    font-size: 1.2em;
+    color: var(--blc-secondary) !important;
+    margin: 10px 0 0 !important;
+}
+
+.blc-form-total strong {
+    color: var(--blc-accent);
+    font-size: 1.1em;
+}
+
+/* Donation Presets */
+.blc-amount-presets {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.blc-preset-btn {
+    flex: 1;
+    min-width: 60px;
+    padding: 10px;
+    border: 2px solid var(--blc-border);
+    border-radius: var(--blc-radius);
+    background: var(--blc-bg);
+    color: var(--blc-secondary);
+    font-weight: 600;
+    font-size: 1em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.blc-preset-btn:hover,
+.blc-preset-btn.active {
+    border-color: var(--blc-accent);
+    background: var(--blc-accent);
+    color: #ffffff;
+}
+
+/* PayPal Buttons Container */
+.blc-paypal-buttons {
+    margin-top: 20px;
+    min-height: 50px;
+}
+
+/* Messages */
+.blc-message {
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: var(--blc-radius);
+    text-align: center;
+    font-size: 1em;
+}
+
+.blc-message.blc-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.blc-message.blc-error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.blc-message.blc-loading {
+    background: var(--blc-bg-light);
+    color: var(--blc-text-light);
+    border: 1px solid var(--blc-border);
+}
+
+/* Sold Out Badge */
+.blc-gala-soldout {
+    text-align: center;
+}
+
+.blc-soldout-badge {
+    display: inline-block;
+    background: var(--blc-secondary);
+    color: var(--blc-accent);
+    font-family: Georgia, serif;
+    font-size: 2em;
+    font-weight: 700;
+    padding: 15px 40px;
+    border-radius: var(--blc-radius);
+    letter-spacing: 3px;
+    margin-bottom: 15px;
+}
+
+.blc-soldout-text {
+    font-size: 1.1em;
+    color: var(--blc-text-light) !important;
+    max-width: 500px;
+    margin: 0 auto !important;
+    line-height: 1.6;
+}
+
+/* Fee Breakdown */
+.blc-fee-line {
+    font-size: 0.9em;
+    color: var(--blc-text-light) !important;
+    margin-top: 4px !important;
+}
+
+.blc-grand-total {
+    font-size: 1.15em;
+    margin-top: 6px !important;
+    padding-top: 6px;
+    border-top: 1px solid var(--blc-border);
+}
+
+.blc-grand-total strong {
+    color: var(--blc-accent);
+    font-size: 1.1em;
+}
+
+/* Cash/Check Button */
+.blc-cashcheck-trigger {
+    display: inline-block;
+    background: transparent;
+    border: 2px solid var(--blc-border);
+    border-radius: var(--blc-radius);
+    padding: 10px 25px;
+    font-size: 0.95em;
+    font-weight: 600;
+    color: var(--blc-text-light);
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+
+.blc-cashcheck-trigger:hover {
+    border-color: var(--blc-accent);
+    color: var(--blc-secondary);
+}
+
+.blc-cashcheck-sub {
+    display: block;
+    font-size: 0.75em;
+    font-weight: 400;
+    color: var(--blc-text-light);
+    margin-top: 2px;
+    font-style: italic;
+}
+
+/* Modal Overlay */
+.blc-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 999999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.blc-modal {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 30px;
+    max-width: 420px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.blc-modal h3 {
+    font-family: Georgia, serif;
+    font-size: 1.4em;
+    color: var(--blc-secondary) !important;
+    margin: 0 0 15px !important;
+    padding: 0 0 10px !important;
+    border-bottom: 2px solid var(--blc-accent);
+}
+
+.blc-modal .blc-form-group {
+    margin-bottom: 15px;
+}
+
+.blc-modal .blc-form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 5px;
+    font-size: 0.9em;
+}
+
+.blc-modal input[type="text"],
+.blc-modal input[type="email"],
+.blc-modal input[type="password"],
+.blc-modal select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--blc-border);
+    border-radius: var(--blc-radius);
+    font-size: 1em;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+.blc-modal input:focus,
+.blc-modal select:focus {
+    outline: none;
+    border-color: var(--blc-accent);
+    box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.2);
+}
+
+.blc-modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.blc-modal-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: var(--blc-radius);
+    font-size: 0.95em;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+
+.blc-modal-btn-primary {
+    background: var(--blc-secondary);
+    color: #ffffff;
+}
+
+.blc-modal-btn-primary:hover {
+    background: var(--blc-accent);
+    color: var(--blc-secondary);
+}
+
+.blc-modal-btn-cancel {
+    background: #e8e2d4;
+    color: var(--blc-text);
+}
+
+.blc-modal-btn-cancel:hover {
+    background: #d0c9b8;
+}
+
+.blc-cc-method-btns {
+    display: flex;
+    gap: 15px;
+}
+
+.blc-cc-method-btns .blc-modal-btn {
+    flex: 1;
+    padding: 15px;
+    font-size: 1.1em;
+}
+
+.blc-cc-method-btns .blc-modal-btn.active {
+    background: var(--blc-accent);
+    color: var(--blc-secondary);
+}
+
+.blc-cc-review-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 15px;
+}
+
+.blc-cc-review-table td {
+    padding: 8px 5px;
+    border-bottom: 1px solid var(--blc-border);
+    font-size: 0.95em;
+}
+
+.blc-cc-review-table td:first-child {
+    width: 100px;
+    color: var(--blc-text-light);
+}
+
+/* Spinner */
+.blc-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid var(--blc-border);
+    border-top-color: var(--blc-accent);
+    border-radius: 50%;
+    animation: blc-spin 0.8s linear infinite;
+    vertical-align: middle;
+    margin-right: 8px;
+}
+
+@keyframes blc-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .blc-gala-wrapper {
+        padding: 10px;
+    }
+
+    .blc-form-row {
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .blc-gala-hero {
+        padding: 25px 15px;
+    }
+
+    .blc-gala-title {
+        font-size: 1.8em;
+    }
+
+    .blc-countdown-item {
+        min-width: 65px;
+        padding: 10px 12px;
+    }
+
+    .blc-countdown-number {
+        font-size: 1.5em;
+    }
+
+    .blc-gala-section {
+        padding: 20px 15px;
+    }
+
+    .blc-amount-presets {
+        gap: 6px;
+    }
+
+    .blc-preset-btn {
+        min-width: 50px;
+        padding: 8px;
+        font-size: 0.9em;
+    }
+}
+
+/* ==========================================================================
+   Volunteer Door Scanner Styles
+   ========================================================================== */
+
+/* PIN Input */
+.blc-scanner-pin-input {
+    width: 100% !important;
+    padding: 16px !important;
+    font-size: 1.5em !important;
+    text-align: center;
+    letter-spacing: 8px;
+    border: 2px solid var(--blc-border) !important;
+    border-radius: var(--blc-radius) !important;
+    font-family: monospace;
+}
+
+.blc-scanner-pin-input:focus {
+    border-color: var(--blc-accent) !important;
+    box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.2);
+    outline: none;
+}
+
+.blc-scanner-pin-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--blc-secondary);
+    color: #ffffff;
+    border: none;
+    border-radius: var(--blc-radius);
+    font-size: 1.1em;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.2s ease;
+}
+
+.blc-scanner-pin-btn:hover {
+    background: var(--blc-accent);
+    color: var(--blc-secondary);
+}
+
+/* Scanner Stats Bar */
+.blc-scanner-stats-bar {
+    text-align: center;
+    background: var(--blc-secondary);
+    color: #ffffff;
+    padding: 12px 20px;
+    border-radius: var(--blc-radius);
+    font-size: 1.1em;
+}
+
+#blc-scanner-checked-in {
+    font-weight: 700;
+    color: var(--blc-accent);
+    font-size: 1.2em;
+}
+
+/* Scanner Controls */
+.blc-scanner-controls {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.blc-scanner-btn {
+    padding: 12px 24px;
+    border: 2px solid var(--blc-border);
+    border-radius: var(--blc-radius);
+    background: var(--blc-bg);
+    color: var(--blc-text);
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+
+.blc-scanner-btn-primary {
+    background: var(--blc-secondary);
+    color: #ffffff;
+    border-color: var(--blc-secondary);
+}
+
+.blc-scanner-btn-primary:hover {
+    background: var(--blc-accent);
+    border-color: var(--blc-accent);
+    color: var(--blc-secondary);
+}
+
+/* Scan Result Card */
+.blc-scan-result {
+    text-align: center;
+    padding: 25px;
+    border-radius: var(--blc-radius);
+    margin-top: 20px;
+    border: 2px solid transparent;
+    animation: blc-scan-pop 0.3s ease;
+}
+
+@keyframes blc-scan-pop {
+    0% { transform: scale(0.9); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.blc-scan-result-icon {
+    font-size: 56px;
+    margin-bottom: 10px;
+    line-height: 1;
+}
+
+.blc-scan-result-name {
+    font-size: 1.6em;
+    font-weight: 700;
+    font-family: Georgia, serif;
+    margin-bottom: 5px;
+}
+
+.blc-scan-result-status {
+    font-size: 1em;
+    color: inherit;
+}
+
+.blc-scan-success {
+    background: #d4edda;
+    border-color: #28a745;
+    color: #155724;
+}
+
+.blc-scan-warning {
+    background: #fff3cd;
+    border-color: #ffc107;
+    color: #856404;
+}
+
+.blc-scan-invalid {
+    background: #f8d7da;
+    border-color: #dc3545;
+    color: #721c24;
+}
+
+/* Scanner manual input inherits form styles */
+.blc-scanner-manual input[type="text"] {
+    padding: 12px 15px;
+    border: 1px solid var(--blc-border);
+    border-radius: var(--blc-radius);
+    font-size: 1em;
+    font-family: inherit;
+    text-transform: uppercase;
+    box-sizing: border-box;
+}
+
+.blc-scanner-manual input[type="text"]:focus {
+    outline: none;
+    border-color: var(--blc-accent);
+    box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.2);
+}
+
+/* ==========================================================================
+   Quick Pay — fixed-amount QR payment page and purchase log
+   ========================================================================== */
+
+.blc-quickpay-amount {
+    text-align: center;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 3.5em;
+    font-weight: 700;
+    color: var(--blc-secondary) !important;
+    line-height: 1.1;
+    margin-bottom: 15px;
+}
+
+.blc-quickpay-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 15px;
+}
+
+.blc-quickpay-option {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    padding: 16px 20px;
+    border: 2px solid var(--blc-border);
+    border-radius: var(--blc-radius);
+    text-decoration: none !important;
+    background: var(--blc-bg);
+    transition: all 0.2s ease;
+}
+
+.blc-quickpay-option:hover {
+    border-color: var(--blc-accent);
+    background: var(--blc-bg-light);
+}
+
+.blc-quickpay-option-label {
+    font-weight: 600;
+    color: var(--blc-secondary) !important;
+}
+
+.blc-quickpay-option-amount {
+    font-family: Georgia, serif;
+    font-size: 1.4em;
+    font-weight: 700;
+    color: var(--blc-accent) !important;
+    white-space: nowrap;
+}
+
+/* Purchase log summary tiles */
+.blc-quickpay-totals {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
+
+.blc-quickpay-total-box {
+    flex: 1;
+    min-width: 130px;
+    background: var(--blc-secondary);
+    border-radius: var(--blc-radius);
+    padding: 18px 15px;
+    text-align: center;
+}
+
+.blc-quickpay-total-number {
+    display: block;
+    font-family: Georgia, serif;
+    font-size: 2em;
+    font-weight: 700;
+    color: var(--blc-accent);
+    line-height: 1.2;
+}
+
+.blc-quickpay-total-label {
+    display: block;
+    font-size: 0.75em;
+    color: #ffffff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 5px;
+}
+
+/* Purchase log table */
+.blc-quickpay-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95em;
+}
+
+.blc-quickpay-table th {
+    text-align: left;
+    padding: 10px 8px;
+    border-bottom: 2px solid var(--blc-border);
+    font-size: 0.85em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--blc-text-light);
+    white-space: nowrap;
+}
+
+.blc-quickpay-table td {
+    padding: 10px 8px;
+    border-bottom: 1px solid var(--blc-border);
+}
+
+.blc-quickpay-report .blc-scanner-btn {
+    margin: 0 5px;
+}
+
+@media print {
+    .blc-quickpay-report .blc-gala-hero,
+    .blc-quickpay-report .blc-scanner-btn,
+    #blc-qp-pin-section { display: none !important; }
+
+    .blc-quickpay-report .blc-gala-section { border: none; padding: 0; }
+    .blc-quickpay-total-box { border: 1px solid #ccc; }
+}
+
+@media (max-width: 600px) {
+    .blc-quickpay-amount { font-size: 2.6em; }
+    .blc-quickpay-table { font-size: 0.85em; }
+    .blc-quickpay-table th,
+    .blc-quickpay-table td { padding: 8px 5px; }
+}
+
+/* Mobile optimizations for scanner */
+@media (max-width: 600px) {
+    .blc-scan-result-icon {
+        font-size: 48px;
+    }
+
+    .blc-scan-result-name {
+        font-size: 1.3em;
+    }
+
+    .blc-scanner-btn {
+        width: 100%;
+        padding: 14px;
+    }
+
+    .blc-scanner-manual > div {
+        flex-direction: column !important;
+    }
+
+    .blc-scanner-manual input[type="text"] {
+        width: 100% !important;
+    }
+}
