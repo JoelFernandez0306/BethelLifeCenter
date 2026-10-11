@@ -90,9 +90,13 @@ class BLC_Gala_Shortcode {
             $item    = BLC_Gala_QuickPay::get_item( $item_id );
 
             wp_add_inline_script( 'blc-gala-quickpay', 'window.blcQuickPay = ' . wp_json_encode( array(
-                'restUrl' => rest_url( 'blc-gala/v1/' ),
-                'itemId'  => $item ? $item['id'] : '',
-                'label'   => $item ? $item['label'] : '',
+                'restUrl'     => rest_url( 'blc-gala/v1/' ),
+                'itemId'      => $item ? $item['id'] : '',
+                'label'       => $item ? $item['label'] : '',
+                'maxQuantity' => BLC_Gala_QuickPay::MAX_QUANTITY,
+                // Prices for every quantity, computed here so the total shown
+                // is exactly the total the server will charge.
+                'prices'      => $item ? BLC_Gala_QuickPay::price_table( $item['amount'] ) : new stdClass(),
             ) ) . ';', 'before' );
         }
 
@@ -551,14 +555,25 @@ class BLC_Gala_Shortcode {
                 </div>
 
                 <div class="blc-gala-section">
-                    <div class="blc-quickpay-amount">$<?php echo esc_html( number_format( $totals['total'], 2 ) ); ?></div>
+                    <p class="blc-quickpay-each" style="text-align: center; margin: 0 0 15px; color: <?php echo esc_attr( $secondary ); ?>;">
+                        <strong style="color: <?php echo esc_attr( $accent ); ?>;">$<?php echo esc_html( number_format( (float) $item['amount'], 2 ) ); ?></strong> per ticket
+                    </p>
+
+                    <div class="blc-quickpay-qty" style="text-align: center; margin: 0 0 20px;">
+                        <label for="blc-quickpay-qty-input" style="display: block; font-weight: 600; margin-bottom: 8px; color: <?php echo esc_attr( $secondary ); ?>;">Number of tickets</label>
+                        <div class="blc-quickpay-stepper" style="display: inline-flex; align-items: stretch; border: 2px solid #e0d9c8; border-radius: 8px; overflow: hidden; background: #ffffff;">
+                            <button type="button" id="blc-quickpay-minus" aria-label="One fewer ticket" style="width: 56px; min-height: 56px; border: 0; background: #f9f6ee; color: <?php echo esc_attr( $secondary ); ?>; font-size: 1.6em; line-height: 1; cursor: pointer;">&minus;</button>
+                            <input type="number" id="blc-quickpay-qty-input" value="1" min="1" max="<?php echo esc_attr( BLC_Gala_QuickPay::MAX_QUANTITY ); ?>" step="1" inputmode="numeric" style="width: 80px; min-height: 56px; border: 0; text-align: center; font-size: 1.5em; font-weight: 700; color: <?php echo esc_attr( $secondary ); ?>; background: #ffffff; -moz-appearance: textfield;" />
+                            <button type="button" id="blc-quickpay-plus" aria-label="One more ticket" style="width: 56px; min-height: 56px; border: 0; background: #f9f6ee; color: <?php echo esc_attr( $secondary ); ?>; font-size: 1.6em; line-height: 1; cursor: pointer;">+</button>
+                        </div>
+                    </div>
+
+                    <div class="blc-quickpay-amount" id="blc-quickpay-total-big">$<?php echo esc_html( number_format( $totals['total'], 2 ) ); ?></div>
 
                     <div class="blc-form-total" style="font-size: 1.05em; color: <?php echo esc_attr( $secondary ); ?>; margin: 0 0 20px; text-align: center;">
-                        <div>Amount: <strong style="color: <?php echo esc_attr( $accent ); ?>;">$<?php echo esc_html( number_format( $totals['subtotal'], 2 ) ); ?></strong></div>
-                        <?php if ( $totals['fee'] > 0 ) : ?>
-                            <div style="font-size: 0.9em; color: #666666; margin-top: 4px;">Processing Fee: <strong style="color: #666666;">$<?php echo esc_html( number_format( $totals['fee'], 2 ) ); ?></strong></div>
-                            <div style="font-size: 1.1em; margin-top: 6px; padding-top: 6px; border-top: 1px solid #e0d9c8;">Total: <strong style="color: <?php echo esc_attr( $accent ); ?>;">$<?php echo esc_html( number_format( $totals['total'], 2 ) ); ?></strong></div>
-                        <?php endif; ?>
+                        <div><span id="blc-quickpay-subtotal-label">1 &times; $<?php echo esc_html( number_format( (float) $item['amount'], 2 ) ); ?></span>: <strong id="blc-quickpay-subtotal" style="color: <?php echo esc_attr( $accent ); ?>;">$<?php echo esc_html( number_format( $totals['subtotal'], 2 ) ); ?></strong></div>
+                        <div id="blc-quickpay-fee-row" style="font-size: 0.9em; color: #666666; margin-top: 4px;<?php echo $totals['fee'] > 0 ? '' : ' display: none;'; ?>">Processing Fee: <strong id="blc-quickpay-fee" style="color: #666666;">$<?php echo esc_html( number_format( $totals['fee'], 2 ) ); ?></strong></div>
+                        <div id="blc-quickpay-total-row" style="font-size: 1.1em; margin-top: 6px; padding-top: 6px; border-top: 1px solid #e0d9c8;<?php echo $totals['fee'] > 0 ? '' : ' display: none;'; ?>">Total: <strong id="blc-quickpay-total" style="color: <?php echo esc_attr( $accent ); ?>;">$<?php echo esc_html( number_format( $totals['total'], 2 ) ); ?></strong></div>
                     </div>
 
                     <div id="blc-quickpay-buttons" class="blc-paypal-buttons"></div>

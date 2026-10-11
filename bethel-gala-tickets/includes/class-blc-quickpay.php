@@ -74,12 +74,55 @@ class BLC_Gala_QuickPay {
     }
 
     /**
-     * What the buyer is charged so the church nets the item's full amount.
+     * Most tickets one person can buy in a single payment. A ceiling rather
+     * than a business rule: it stops a mistyped quantity becoming a huge
+     * charge, and keeps the price table the page ships to the browser small.
+     */
+    const MAX_QUANTITY = 99;
+
+    /**
+     * Turn whatever the browser sent into a usable quantity.
+     *
+     * A missing value means 1, so a page still running an older cached copy of
+     * the script, which never sent a quantity, keeps working.
+     *
+     * @param mixed $raw
+     * @return int|WP_Error
+     */
+    public static function sanitize_quantity( $raw ) {
+        if ( null === $raw || '' === $raw ) {
+            return 1;
+        }
+
+        if ( ! is_numeric( $raw ) || (float) $raw !== floor( (float) $raw ) ) {
+            return new WP_Error( 'invalid_quantity', 'Please enter a whole number of tickets.' );
+        }
+
+        $quantity = (int) $raw;
+
+        if ( $quantity < 1 || $quantity > self::MAX_QUANTITY ) {
+            return new WP_Error(
+                'invalid_quantity',
+                sprintf( 'Please choose between 1 and %d tickets.', self::MAX_QUANTITY )
+            );
+        }
+
+        return $quantity;
+    }
+
+    /**
+     * What the buyer is charged for $quantity tickets at $amount each, so the
+     * church nets the full subtotal.
+     *
+     * The fee is worked out once on the whole subtotal, not per ticket,
+     * because PayPal's fixed fee applies once per payment. Three $5 tickets
+     * therefore cost less in fees than three separate $5 payments would.
+     *
      * Uses the same PayPal fee settings as tickets and donations, so changing
      * those numbers updates every QR code at once.
      */
-    public static function calculate_total( $amount ) {
-        $amount = round( floatval( $amount ), 2 );
+    public static function calculate_total( $amount, $quantity = 1 ) {
+        $amount = round( floatval( $amount ) * max( 1, (int) $quantity ), 2 );
         $rate   = (float) get_option( 'blc_gala_paypal_fee_rate', 2.99 ) / 100;
         $fixed  = (float) get_option( 'blc_gala_paypal_fee_fixed', 0.49 );
 
@@ -103,6 +146,26 @@ class BLC_Gala_QuickPay {
             'fee'      => round( $total - $amount, 2 ),
             'total'    => $total,
         );
+    }
+
+    /**
+     * Every possible price for an item, keyed by quantity.
+     *
+     * The payment page is handed this table instead of working the fee out
+     * again in JavaScript. That way the total a buyer sees is, to the cent,
+     * the total the server will charge — two separate roundings of the same
+     * sum can disagree by a cent.
+     *
+     * @return array [ quantity => {subtotal, fee, total} ]
+     */
+    public static function price_table( $amount ) {
+        $table = array();
+
+        for ( $q = 1; $q <= self::MAX_QUANTITY; $q++ ) {
+            $table[ $q ] = self::calculate_total( $amount, $q );
+        }
+
+        return $table;
     }
 
     /**

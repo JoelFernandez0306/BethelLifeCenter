@@ -139,12 +139,20 @@ class BLC_Gala_REST_API {
         $params  = $request->get_json_params();
         $item_id = isset( $params['item_id'] ) ? sanitize_text_field( $params['item_id'] ) : '';
 
-        // The amount always comes from the saved item, never from the request,
-        // so editing the URL cannot change what gets charged.
+        // The price always comes from the saved item, never from the request,
+        // so editing the URL cannot change what gets charged. The browser
+        // only chooses how many; the server multiplies.
         $item = BLC_Gala_QuickPay::get_item( $item_id );
 
         if ( ! $item ) {
             return new WP_Error( 'invalid_item', 'This payment code is no longer available.', array( 'status' => 404 ) );
+        }
+
+        $quantity = BLC_Gala_QuickPay::sanitize_quantity( isset( $params['quantity'] ) ? $params['quantity'] : null );
+
+        if ( is_wp_error( $quantity ) ) {
+            $quantity->add_data( array( 'status' => 400 ) );
+            return $quantity;
         }
 
         $paypal = new BLC_Gala_PayPal();
@@ -152,15 +160,18 @@ class BLC_Gala_REST_API {
             return new WP_Error( 'paypal_not_configured', 'Payments are not set up yet.', array( 'status' => 503 ) );
         }
 
-        $totals      = BLC_Gala_QuickPay::calculate_total( $item['amount'] );
+        $totals      = BLC_Gala_QuickPay::calculate_total( $item['amount'], $quantity );
         $tickets_mgr = new BLC_Gala_Tickets();
-        $order_data  = $tickets_mgr->create_quickpay_order( $item['label'], $totals['total'] );
+        $order_data  = $tickets_mgr->create_quickpay_order( $item['label'], $totals['total'], $quantity );
 
         if ( is_wp_error( $order_data ) ) {
             return $order_data;
         }
 
-        $paypal_order = $paypal->create_order( $order_data['order_uuid'], $totals['total'], $item['label'] );
+        // What PayPal shows the buyer on their statement line.
+        $description = $quantity > 1 ? $item['label'] . ' × ' . $quantity : $item['label'];
+
+        $paypal_order = $paypal->create_order( $order_data['order_uuid'], $totals['total'], $description );
 
         if ( is_wp_error( $paypal_order ) ) {
             $wpdb->delete( $wpdb->prefix . 'blc_gala_orders', array( 'order_uuid' => $order_data['order_uuid'] ) );
@@ -215,9 +226,12 @@ class BLC_Gala_REST_API {
             return $order;
         }
 
+        $qty = (int) $order->quantity;
+
         return rest_ensure_response( array(
             'success' => true,
-            'message' => 'Thank you! Your payment of $' . number_format( (float) $order->amount_paid, 2 ) . ' was received.',
+            'message' => 'Thank you! Your payment of $' . number_format( (float) $order->amount_paid, 2 )
+                . ( $qty > 1 ? ' for ' . $qty . ' tickets' : '' ) . ' was received.',
         ) );
     }
 
@@ -239,6 +253,7 @@ class BLC_Gala_REST_API {
                 'card_last4' => $row->card_last4,
                 'card_brand' => $row->card_brand,
                 'amount'     => (float) $row->amount_paid,
+                'quantity'   => max( 1, (int) $row->quantity ),
                 'label'      => $row->payment_label,
                 'created_at' => $row->created_at,
             );

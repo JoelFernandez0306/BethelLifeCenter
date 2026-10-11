@@ -294,10 +294,11 @@ class BLC_Gala_Tickets {
     /**
      * Create a pending quick-pay order for a fixed-amount QR code.
      *
-     * @param string $label  Which item was scanned, for the purchase log.
-     * @param float  $amount The total the buyer will be charged, fee included.
+     * @param string $label    Which item was scanned, for the purchase log.
+     * @param float  $amount   The total the buyer will be charged, fee included.
+     * @param int    $quantity How many tickets that total covers.
      */
-    public function create_quickpay_order( $label, $amount ) {
+    public function create_quickpay_order( $label, $amount, $quantity = 1 ) {
         global $wpdb;
 
         $order_uuid = wp_generate_uuid4();
@@ -307,7 +308,7 @@ class BLC_Gala_Tickets {
             'order_type'    => 'quickpay',
             'buyer_name'    => '',
             'buyer_email'   => '',
-            'quantity'      => 1,
+            'quantity'      => max( 1, (int) $quantity ),
             'amount_paid'   => floatval( $amount ),
             'payment_label' => sanitize_text_field( $label ),
             'status'        => 'pending',
@@ -379,7 +380,7 @@ class BLC_Gala_Tickets {
         global $wpdb;
 
         return $wpdb->get_results( $wpdb->prepare(
-            "SELECT payer_name, card_last4, card_brand, amount_paid, payment_label, created_at
+            "SELECT payer_name, card_last4, card_brand, amount_paid, quantity, payment_label, created_at
              FROM {$this->orders_table}
              WHERE order_type = %s AND status = %s
              ORDER BY created_at DESC

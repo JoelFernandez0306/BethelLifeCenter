@@ -426,7 +426,8 @@
     <p class="description" style="max-width: 700px;">
         Create a QR code for any dollar amount. Print it, set it out, and people scan it to pay that
         exact amount &mdash; useful for fundraiser meals, snacks, books, or anything sold in person.
-        The PayPal fee settings above are added automatically so the church receives the full amount.
+        Whoever scans it can choose how many tickets to buy &mdash; 3 tickets on a $5 code is charged as $15 &mdash;
+        and the PayPal fee settings above are added once on the whole total, so the church receives the full amount.
     </p>
 
     <?php if ( $qp_notice === 'added' ) : ?>

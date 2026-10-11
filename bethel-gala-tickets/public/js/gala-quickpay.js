@@ -9,11 +9,100 @@
     var adminToken = null;
 
     // ========================================================================
+    // Quantity
+    // ========================================================================
+    function money(n) {
+        return '$' + Number(n).toFixed(2);
+    }
+
+    /**
+     * The quantity currently in the box, clamped to something payable.
+     * Anything unusable (empty, text, decimals, out of range) falls back
+     * to the nearest valid whole number so a price is always shown.
+     */
+    function getQuantity() {
+        var input = document.getElementById('blc-quickpay-qty-input');
+        var max = Number(config.maxQuantity) || 99;
+        var q = input ? parseInt(input.value, 10) : 1;
+        if (isNaN(q) || q < 1) q = 1;
+        if (q > max) q = max;
+        return q;
+    }
+
+    function setText(id, text) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = text;
+    }
+
+    function showRow(id, visible) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = visible ? '' : 'none';
+    }
+
+    /**
+     * Refresh every figure on the page for the chosen quantity. Prices come
+     * from the server-built table, so nothing is calculated here.
+     */
+    function updateTotals() {
+        var q = getQuantity();
+        var row = config.prices && config.prices[q];
+        if (!row) return;
+
+        var each = row.subtotal / q;
+
+        setText('blc-quickpay-total-big', money(row.total));
+        setText('blc-quickpay-subtotal-label', q + ' × ' + money(each));
+        setText('blc-quickpay-subtotal', money(row.subtotal));
+        setText('blc-quickpay-fee', money(row.fee));
+        setText('blc-quickpay-total', money(row.total));
+
+        var hasFee = row.fee > 0;
+        showRow('blc-quickpay-fee-row', hasFee);
+        showRow('blc-quickpay-total-row', hasFee);
+    }
+
+    function initQuantity() {
+        var input = document.getElementById('blc-quickpay-qty-input');
+        if (!input) return;
+
+        var max = Number(config.maxQuantity) || 99;
+
+        function set(q) {
+            input.value = Math.min(max, Math.max(1, q));
+            updateTotals();
+        }
+
+        document.getElementById('blc-quickpay-minus').addEventListener('click', function () {
+            set(getQuantity() - 1);
+        });
+        document.getElementById('blc-quickpay-plus').addEventListener('click', function () {
+            set(getQuantity() + 1);
+        });
+
+        // Typing is allowed to pass through an empty box on its way to a new
+        // number, so only live-update here and tidy the value once they leave.
+        input.addEventListener('input', updateTotals);
+        input.addEventListener('change', function () { set(getQuantity()); });
+        input.addEventListener('blur', function () { set(getQuantity()); });
+
+        updateTotals();
+    }
+
+    function lockQuantity() {
+        ['blc-quickpay-qty-input', 'blc-quickpay-minus', 'blc-quickpay-plus'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) el.disabled = true;
+        });
+    }
+
+    // ========================================================================
     // Payment page
     // ========================================================================
     function initPayment() {
         var container = document.getElementById('blc-quickpay-buttons');
         if (!container || !config.itemId) return;
+
+        initQuantity();
 
         if (typeof paypal === 'undefined') {
             container.innerHTML = '<div class="blc-message blc-error" style="display:block;">PayPal failed to load. Please refresh the page and try again.</div>';
@@ -29,7 +118,10 @@
                 return fetch(config.restUrl + 'quickpay-create-order', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ item_id: config.itemId })
+                    // Read at the moment they pay, so a change made after the
+                    // PayPal buttons appeared is still honoured. The server
+                    // works out the price; this is only how many.
+                    body: JSON.stringify({ item_id: config.itemId, quantity: getQuantity() })
                 })
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
@@ -59,6 +151,7 @@
                     if (result.success) {
                         showMessage('blc-quickpay-message', result.message, 'success');
                         container.innerHTML = '';
+                        lockQuantity();
                     } else {
                         showMessage('blc-quickpay-message', result.message || 'Payment could not be confirmed. Please contact us.', 'error');
                     }
@@ -151,7 +244,7 @@
 
         var html = '<div style="overflow-x:auto;"><table class="blc-quickpay-table">';
         html += '<thead><tr>' +
-                '<th>Date</th><th>Name</th><th>Card</th><th>For</th><th style="text-align:right;">Amount</th>' +
+                '<th>Date</th><th>Name</th><th>Card</th><th>For</th><th style="text-align:right;">Tickets</th><th style="text-align:right;">Amount</th>' +
                 '</tr></thead><tbody>';
 
         for (var i = 0; i < purchases.length; i++) {
@@ -161,6 +254,7 @@
                 '<td style="font-weight:600;">' + escapeHtml(p.name) + '</td>' +
                 '<td>' + escapeHtml(formatCard(p)) + '</td>' +
                 '<td>' + escapeHtml(p.label || '—') + '</td>' +
+                '<td style="text-align:right;">' + escapeHtml(p.quantity || 1) + '</td>' +
                 '<td style="text-align:right;font-weight:600;">$' + Number(p.amount).toFixed(2) + '</td>' +
                 '</tr>';
         }
