@@ -73,6 +73,66 @@ class BLC_Gala_QuickPay {
         update_option( self::OPTION, $items );
     }
 
+    /** Option names for the fee charged on QR code payments. */
+    const OPTION_FEE_RATE  = 'blc_gala_quickpay_fee_rate';
+    const OPTION_FEE_FIXED = 'blc_gala_quickpay_fee_fixed';
+
+    /**
+     * The fee added to QR code payments, kept separate from the gala ticket
+     * and donation fee so the two can differ (a raffle ticket may be billed
+     * at a different rate from a gala ticket).
+     *
+     * Until these have been saved they follow the gala fee settings, so a
+     * site that has never touched them keeps charging exactly what it did.
+     *
+     * @return array {rate: percent e.g. 1.99, fixed: dollars e.g. 0.49}
+     */
+    public static function fee_settings() {
+        $rate  = get_option( self::OPTION_FEE_RATE, false );
+        $fixed = get_option( self::OPTION_FEE_FIXED, false );
+
+        if ( false === $rate ) {
+            $rate = get_option( 'blc_gala_paypal_fee_rate', 2.99 );
+        }
+        if ( false === $fixed ) {
+            $fixed = get_option( 'blc_gala_paypal_fee_fixed', 0.49 );
+        }
+
+        return array(
+            'rate'  => (float) $rate,
+            'fixed' => (float) $fixed,
+        );
+    }
+
+    /**
+     * Save the QR code fee. Refuses values that are clearly typos, since a
+     * wrong rate here is charged to real buyers.
+     *
+     * @param mixed $rate  Percentage, e.g. 1.99.
+     * @param mixed $fixed Dollars per payment, e.g. 0.49.
+     * @return true|WP_Error
+     */
+    public static function save_fee_settings( $rate, $fixed ) {
+        if ( ! is_numeric( $rate ) || ! is_numeric( $fixed ) ) {
+            return new WP_Error( 'invalid_fee', 'Please enter both the percentage and the fixed fee as numbers (use 0 for none).' );
+        }
+
+        $rate  = round( (float) $rate, 2 );
+        $fixed = round( (float) $fixed, 2 );
+
+        if ( $rate < 0 || $rate > 20 ) {
+            return new WP_Error( 'invalid_fee', 'The percentage should be between 0 and 20. For 1.99%, type 1.99.' );
+        }
+        if ( $fixed < 0 || $fixed > 5 ) {
+            return new WP_Error( 'invalid_fee', 'The fixed fee should be between $0 and $5. For 49 cents, type 0.49.' );
+        }
+
+        update_option( self::OPTION_FEE_RATE, $rate );
+        update_option( self::OPTION_FEE_FIXED, $fixed );
+
+        return true;
+    }
+
     /**
      * Most tickets one person can buy in a single payment. A ceiling rather
      * than a business rule: it stops a mistyped quantity becoming a huge
@@ -118,13 +178,14 @@ class BLC_Gala_QuickPay {
      * because PayPal's fixed fee applies once per payment. Three $5 tickets
      * therefore cost less in fees than three separate $5 payments would.
      *
-     * Uses the same PayPal fee settings as tickets and donations, so changing
-     * those numbers updates every QR code at once.
+     * Uses the QR code fee from fee_settings(), so changing those two numbers
+     * updates every QR code at once without touching gala ticket pricing.
      */
     public static function calculate_total( $amount, $quantity = 1 ) {
         $amount = round( floatval( $amount ) * max( 1, (int) $quantity ), 2 );
-        $rate   = (float) get_option( 'blc_gala_paypal_fee_rate', 2.99 ) / 100;
-        $fixed  = (float) get_option( 'blc_gala_paypal_fee_fixed', 0.49 );
+        $fee    = self::fee_settings();
+        $rate   = $fee['rate'] / 100;
+        $fixed  = $fee['fixed'];
 
         if ( $rate <= 0 && $fixed <= 0 ) {
             return array(

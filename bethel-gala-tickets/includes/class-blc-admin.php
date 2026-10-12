@@ -34,6 +34,25 @@ class BLC_Gala_Admin {
             exit;
         }
 
+        if ( isset( $_POST['blc_qp_fee_save'] ) ) {
+            check_admin_referer( 'blc_qp_fee_save' );
+
+            $result = BLC_Gala_QuickPay::save_fee_settings(
+                isset( $_POST['blc_qp_fee_rate'] ) ? wp_unslash( $_POST['blc_qp_fee_rate'] ) : '',
+                isset( $_POST['blc_qp_fee_fixed'] ) ? wp_unslash( $_POST['blc_qp_fee_fixed'] ) : ''
+            );
+
+            if ( is_wp_error( $result ) ) {
+                set_transient( 'blc_qp_fee_error', $result->get_error_message(), MINUTE_IN_SECONDS );
+                $notice = 'fee_invalid';
+            } else {
+                $notice = 'fee_saved';
+            }
+
+            wp_safe_redirect( admin_url( 'admin.php?page=blc-gala-settings&blc_qp_notice=' . $notice . '#blc-quickpay' ) );
+            exit;
+        }
+
         if ( isset( $_GET['blc_qp_delete'] ) ) {
             check_admin_referer( 'blc_qp_delete' );
 

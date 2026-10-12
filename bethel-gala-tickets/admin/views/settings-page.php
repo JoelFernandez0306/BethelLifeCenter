@@ -427,7 +427,7 @@
         Create a QR code for any dollar amount. Print it, set it out, and people scan it to pay that
         exact amount &mdash; useful for fundraiser meals, snacks, books, or anything sold in person.
         Whoever scans it can choose how many tickets to buy &mdash; 3 tickets on a $5 code is charged as $15 &mdash;
-        and the PayPal fee settings above are added once on the whole total, so the church receives the full amount.
+        and the fee below is added once on the whole total, so the church receives the full amount.
     </p>
 
     <?php if ( $qp_notice === 'added' ) : ?>
@@ -436,7 +436,49 @@
         <div class="notice notice-success is-dismissible"><p>QR code deleted. Past payments were kept.</p></div>
     <?php elseif ( $qp_notice === 'invalid' ) : ?>
         <div class="notice notice-error is-dismissible"><p>Please enter an amount of at least $0.01.</p></div>
+    <?php elseif ( $qp_notice === 'fee_saved' ) : ?>
+        <div class="notice notice-success is-dismissible"><p>QR code fee saved. Every QR code now uses the new fee. Gala tickets and donations were not changed.</p></div>
+    <?php elseif ( $qp_notice === 'fee_invalid' ) : ?>
+        <?php $qp_fee_error = get_transient( 'blc_qp_fee_error' ); delete_transient( 'blc_qp_fee_error' ); ?>
+        <div class="notice notice-error is-dismissible"><p><?php echo esc_html( $qp_fee_error ? $qp_fee_error : 'Could not save that fee.' ); ?></p></div>
     <?php endif; ?>
+
+    <?php
+    $qp_fee     = BLC_Gala_QuickPay::fee_settings();
+    $qp_example = BLC_Gala_QuickPay::calculate_total( 5, 1 );
+    ?>
+    <form method="post" action="" style="margin: 20px 0; padding: 15px 20px; background: #fff; border: 1px solid #c3c4c7; max-width: 700px;">
+        <?php wp_nonce_field( 'blc_qp_fee_save' ); ?>
+        <h3 style="margin-top: 0;">QR Code PayPal Fee</h3>
+        <p class="description" style="margin-top: 0;">
+            Currently <strong><?php echo esc_html( rtrim( rtrim( number_format( $qp_fee['rate'], 2 ), '0' ), '.' ) ); ?>% + $<?php echo esc_html( number_format( $qp_fee['fixed'], 2 ) ); ?></strong>.
+            This is separate from the gala ticket fee
+            (<?php echo esc_html( rtrim( rtrim( number_format( (float) get_option( 'blc_gala_paypal_fee_rate', 2.99 ), 2 ), '0' ), '.' ) ); ?>% + $<?php echo esc_html( number_format( (float) get_option( 'blc_gala_paypal_fee_fixed', 0.49 ), 2 ) ); ?>
+            under PayPal Settings above), which changing this does not affect.
+        </p>
+        <table class="form-table">
+            <tr>
+                <th><label for="blc_qp_fee_rate">Percentage Fee (%)</label></th>
+                <td>
+                    <input type="number" id="blc_qp_fee_rate" name="blc_qp_fee_rate" class="small-text" min="0" max="20" step="0.01" value="<?php echo esc_attr( $qp_fee['rate'] ); ?>" required />
+                    <p class="description">The percent PayPal takes. For 1.99%, type <code>1.99</code>.</p>
+                </td>
+            </tr>
+            <tr>
+                <th><label for="blc_qp_fee_fixed">Fixed Fee ($)</label></th>
+                <td>
+                    <input type="number" id="blc_qp_fee_fixed" name="blc_qp_fee_fixed" class="small-text" min="0" max="5" step="0.01" value="<?php echo esc_attr( $qp_fee['fixed'] ); ?>" required />
+                    <p class="description">The flat amount PayPal adds per payment. For 49 cents, type <code>0.49</code>.</p>
+                </td>
+            </tr>
+        </table>
+        <p class="description">
+            With these numbers a <strong>$5.00</strong> code charges the buyer
+            <strong>$<?php echo esc_html( number_format( $qp_example['total'], 2 ) ); ?></strong>
+            (fee $<?php echo esc_html( number_format( $qp_example['fee'], 2 ) ); ?>), and the church receives $5.00.
+        </p>
+        <p><button type="submit" name="blc_qp_fee_save" value="1" class="button button-primary">Save QR Code Fee</button></p>
+    </form>
 
     <?php if ( ! $qp_page_url ) : ?>
         <div class="notice notice-warning inline" style="margin: 15px 0;">

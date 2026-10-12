@@ -99,6 +99,16 @@ class BLC_Gala_Activator {
             }
         }
 
+        // QR code payments got their own fee settings. Seed them from whatever
+        // the gala fee is today so the update does not change any prices; they
+        // only diverge once someone edits them on purpose.
+        if ( get_option( 'blc_gala_quickpay_fee_rate' ) === false ) {
+            add_option( 'blc_gala_quickpay_fee_rate', (float) get_option( 'blc_gala_paypal_fee_rate', 2.99 ) );
+        }
+        if ( get_option( 'blc_gala_quickpay_fee_fixed' ) === false ) {
+            add_option( 'blc_gala_quickpay_fee_fixed', (float) get_option( 'blc_gala_paypal_fee_fixed', 0.49 ) );
+        }
+
         // Upgrade: if max_per_order was set to 1 from an older version, bump to 10
         if ( (int) get_option( 'blc_gala_max_per_order' ) === 1 ) {
             update_option( 'blc_gala_max_per_order', 10 );
