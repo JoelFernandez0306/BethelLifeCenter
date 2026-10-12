@@ -541,8 +541,8 @@ class BLC_Gala_Shortcode {
             <?php if ( $is_donate ) : ?>
 
                 <div class="blc-gala-hero">
-                    <h1 class="blc-gala-title">Make a Donation</h1>
-                    <p class="blc-gala-tagline"><?php echo esc_html( $church ); ?></p>
+                    <h1 class="blc-gala-title">Make a donation to</h1>
+                    <p class="blc-gala-tagline">Always on Mission</p>
                 </div>
 
                 <div class="blc-gala-section">
