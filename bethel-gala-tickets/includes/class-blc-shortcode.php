@@ -86,13 +86,29 @@ class BLC_Gala_Shortcode {
 
             wp_enqueue_script( 'blc-gala-quickpay', BLC_GALA_PLUGIN_URL . 'public/js/gala-quickpay.js', $qp_deps, BLC_GALA_VERSION, true );
 
-            $item_id = isset( $_GET['blc_qp'] ) ? sanitize_text_field( wp_unslash( $_GET['blc_qp'] ) ) : '';
-            $item    = BLC_Gala_QuickPay::get_item( $item_id );
+            $item_id   = isset( $_GET['blc_qp'] ) ? sanitize_text_field( wp_unslash( $_GET['blc_qp'] ) ) : '';
+            $is_donate = ( BLC_Gala_QuickPay::DONATE_ID === $item_id );
+            $item      = $is_donate ? null : BLC_Gala_QuickPay::get_item( $item_id );
+
+            // Donation mode: the donor picks the amount, so the page is given
+            // the fee as whole numbers and works the total out itself.
+            $donation = null;
+            if ( $is_donate ) {
+                $fee_params = BLC_Gala_QuickPay::donation_fee_params();
+                $donation   = array(
+                    'fixedCents' => $fee_params['fixed_cents'],
+                    'rateHund'   => $fee_params['rate_hund'],
+                    'hasFee'     => $fee_params['fixed_cents'] > 0 || $fee_params['rate_hund'] > 0,
+                    'minCents'   => BLC_Gala_QuickPay::MIN_DONATION_CENTS,
+                    'maxCents'   => BLC_Gala_QuickPay::MAX_DONATION_CENTS,
+                );
+            }
 
             wp_add_inline_script( 'blc-gala-quickpay', 'window.blcQuickPay = ' . wp_json_encode( array(
                 'restUrl'     => rest_url( 'blc-gala/v1/' ),
-                'itemId'      => $item ? $item['id'] : '',
-                'label'       => $item ? $item['label'] : '',
+                'itemId'      => $is_donate ? BLC_Gala_QuickPay::DONATE_ID : ( $item ? $item['id'] : '' ),
+                'label'       => $is_donate ? BLC_Gala_QuickPay::donation_note() : ( $item ? $item['label'] : '' ),
+                'donation'    => $donation,
                 'maxQuantity' => BLC_Gala_QuickPay::MAX_QUANTITY,
                 // Prices for every quantity, computed here so the total shown
                 // is exactly the total the server will charge.
@@ -511,15 +527,62 @@ class BLC_Gala_Shortcode {
         $secondary = get_option( 'blc_gala_secondary_color', '#1B2A4A' );
         $church    = get_option( 'blc_gala_event_tagline', 'Bethel Life Center' );
 
-        $item_id = isset( $_GET['blc_qp'] ) ? sanitize_text_field( wp_unslash( $_GET['blc_qp'] ) ) : '';
-        $item    = BLC_Gala_QuickPay::get_item( $item_id );
-        $paypal  = new BLC_Gala_PayPal();
+        $item_id   = isset( $_GET['blc_qp'] ) ? sanitize_text_field( wp_unslash( $_GET['blc_qp'] ) ) : '';
+        $is_donate = ( BLC_Gala_QuickPay::DONATE_ID === $item_id );
+        $item      = $is_donate ? null : BLC_Gala_QuickPay::get_item( $item_id );
+        $paypal    = new BLC_Gala_PayPal();
+        $don_fee   = BLC_Gala_QuickPay::donation_fee_params();
+        $don_has_fee = $don_fee['fixed_cents'] > 0 || $don_fee['rate_hund'] > 0;
 
         ob_start();
         ?>
         <div class="blc-gala-wrapper blc-quickpay-wrapper" style="--blc-accent: <?php echo esc_attr( $accent ); ?>; --blc-secondary: <?php echo esc_attr( $secondary ); ?>;">
 
-            <?php if ( ! $item ) : ?>
+            <?php if ( $is_donate ) : ?>
+
+                <div class="blc-gala-hero">
+                    <h1 class="blc-gala-title">Make a Donation</h1>
+                    <p class="blc-gala-tagline"><?php echo esc_html( $church ); ?></p>
+                </div>
+
+                <div class="blc-gala-section">
+                    <p class="blc-gala-description" style="text-align: center; margin: 0 0 18px;">
+                        Thank you for supporting our missions work. Choose an amount, or enter your own.
+                    </p>
+
+                    <div class="blc-amount-presets">
+                        <?php foreach ( array( 10, 25, 50, 100, 250 ) as $preset ) : ?>
+                            <button type="button" class="blc-preset-btn blc-don-preset" data-amount="<?php echo esc_attr( $preset ); ?>" style="min-height: 48px;">$<?php echo esc_html( $preset ); ?></button>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <div style="text-align: center; margin: 4px 0 20px;">
+                        <label for="blc-don-amount" style="display: block; font-weight: 600; margin-bottom: 8px; color: <?php echo esc_attr( $secondary ); ?>;">Donation amount</label>
+                        <div style="display: inline-flex; align-items: center; border: 2px solid #e0d9c8; border-radius: 8px; background: #ffffff; overflow: hidden;">
+                            <span style="padding: 0 4px 0 16px; font-size: 1.5em; font-weight: 700; color: <?php echo esc_attr( $secondary ); ?>;">$</span>
+                            <input type="text" id="blc-don-amount" inputmode="decimal" autocomplete="off" placeholder="0.00" aria-describedby="blc-don-error" style="width: 150px; min-height: 56px; border: 0; font-size: 1.5em; font-weight: 700; color: <?php echo esc_attr( $secondary ); ?>; background: #ffffff;" />
+                        </div>
+                        <div id="blc-don-error" role="alert" style="display: none; margin-top: 8px; color: #c0392b; font-size: 0.95em;"></div>
+                    </div>
+
+                    <div class="blc-quickpay-amount" id="blc-quickpay-total-big">$0.00</div>
+
+                    <div class="blc-form-total" style="font-size: 1.05em; color: <?php echo esc_attr( $secondary ); ?>; margin: 0 0 20px; text-align: center;">
+                        <div>Your gift: <strong id="blc-don-gift" style="color: <?php echo esc_attr( $accent ); ?>;">$0.00</strong></div>
+                        <div id="blc-don-fee-row" style="font-size: 0.9em; color: #666666; margin-top: 4px;<?php echo $don_has_fee ? '' : ' display: none;'; ?>">Processing fee, so your whole gift reaches the mission: <strong id="blc-don-fee" style="color: #666666;">$0.00</strong></div>
+                        <div id="blc-don-total-row" style="font-size: 1.1em; margin-top: 6px; padding-top: 6px; border-top: 1px solid #e0d9c8;<?php echo $don_has_fee ? '' : ' display: none;'; ?>">Total: <strong id="blc-don-total" style="color: <?php echo esc_attr( $accent ); ?>;">$0.00</strong></div>
+                    </div>
+
+                    <div id="blc-quickpay-buttons" class="blc-paypal-buttons"></div>
+
+                    <?php if ( ! $paypal->is_configured() ) : ?>
+                        <div class="blc-message blc-error" style="display: block;">Payment is not yet configured. Please check back soon!</div>
+                    <?php endif; ?>
+
+                    <div id="blc-quickpay-message" class="blc-message" style="display: none;"></div>
+                </div>
+
+            <?php elseif ( ! $item ) : ?>
 
                 <?php $available = BLC_Gala_QuickPay::get_items(); ?>
                 <div class="blc-gala-hero">

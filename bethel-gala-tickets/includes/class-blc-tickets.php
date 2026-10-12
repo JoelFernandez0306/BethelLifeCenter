@@ -296,7 +296,7 @@ class BLC_Gala_Tickets {
      *
      * @param string $label    Which item was scanned, for the purchase log.
      * @param float  $amount   The total the buyer will be charged, fee included.
-     * @param int    $quantity How many tickets that total covers.
+     * @param int    $quantity How many tickets that total covers; 0 for a donation.
      */
     public function create_quickpay_order( $label, $amount, $quantity = 1 ) {
         global $wpdb;
@@ -308,7 +308,8 @@ class BLC_Gala_Tickets {
             'order_type'    => 'quickpay',
             'buyer_name'    => '',
             'buyer_email'   => '',
-            'quantity'      => max( 1, (int) $quantity ),
+            // 0 marks a donation, which is money with no tickets attached.
+            'quantity'      => max( 0, (int) $quantity ),
             'amount_paid'   => floatval( $amount ),
             'payment_label' => sanitize_text_field( $label ),
             'status'        => 'pending',

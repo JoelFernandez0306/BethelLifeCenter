@@ -90,6 +90,7 @@
 
         var label = card.data('label') || '';
         var amount = card.data('amount') || '';
+        var hint = card.data('hint') || 'Scan with your phone camera to pay';
 
         var win = window.open('', '_blank', 'width=700,height=800');
         if (!win) {
@@ -114,7 +115,7 @@
             '<h1>' + esc(label) + '</h1>' +
             '<div class="amt">' + esc(amount) + '</div>' +
             '<img src="' + img.attr('src') + '" alt="QR Code" />' +
-            '<div class="hint">Scan with your phone camera to pay</div>' +
+            '<div class="hint">' + esc(hint) + '</div>' +
             '</body></html>'
         );
         win.document.close();

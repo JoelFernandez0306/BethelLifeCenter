@@ -53,6 +53,26 @@ class BLC_Gala_Admin {
             exit;
         }
 
+        if ( isset( $_POST['blc_don_save'] ) ) {
+            check_admin_referer( 'blc_don_save' );
+
+            $result = BLC_Gala_QuickPay::save_donation_settings(
+                isset( $_POST['blc_don_fee_rate'] ) ? wp_unslash( $_POST['blc_don_fee_rate'] ) : '',
+                isset( $_POST['blc_don_fee_fixed'] ) ? wp_unslash( $_POST['blc_don_fee_fixed'] ) : '',
+                isset( $_POST['blc_don_note'] ) ? wp_unslash( $_POST['blc_don_note'] ) : ''
+            );
+
+            if ( is_wp_error( $result ) ) {
+                set_transient( 'blc_don_error', $result->get_error_message(), MINUTE_IN_SECONDS );
+                $notice = 'invalid';
+            } else {
+                $notice = 'saved';
+            }
+
+            wp_safe_redirect( admin_url( 'admin.php?page=blc-gala-settings&blc_don_notice=' . $notice . '#blc-donation-qr' ) );
+            exit;
+        }
+
         if ( isset( $_GET['blc_qp_delete'] ) ) {
             check_admin_referer( 'blc_qp_delete' );
 

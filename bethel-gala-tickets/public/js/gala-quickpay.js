@@ -96,13 +96,121 @@
     }
 
     // ========================================================================
+    // Donation (open amount)
+    // ========================================================================
+
+    /**
+     * Read what the donor typed as whole cents, or null if it is not a
+     * clean money amount. Done with string handling rather than parseFloat so
+     * "19.99" is exactly 1999 cents and never 1998.9999999.
+     */
+    function parseCents(text) {
+        var t = String(text == null ? '' : text).replace(/[\s,$]/g, '');
+        // "25." and ".50" are allowed so nothing looks wrong mid-typing.
+        var m = /^(\d*)(?:\.(\d{0,2}))?$/.exec(t);
+        if (!m) return null;
+
+        var dollars = m[1], frac = m[2] || '';
+        if (dollars === '' && frac === '') return null;   // nothing but a dot
+        if (dollars.length > 7) return null;
+
+        var cents = frac ? parseInt((frac + '0').slice(0, 2), 10) : 0;
+        return (dollars === '' ? 0 : parseInt(dollars, 10)) * 100 + cents;
+    }
+
+    /**
+     * What the donor is charged for a gift. This mirrors
+     * BLC_Gala_QuickPay::donation_total() step for step, in whole numbers,
+     * so the total on screen is always the total the server charges.
+     *
+     * total = (gift + fixed) / (1 - rate), rounded half up to the cent.
+     */
+    function donationTotalCents(gift) {
+        var d = config.donation;
+        var fixed = d.fixedCents, rate = d.rateHund;
+        if (rate <= 0 && fixed <= 0) return gift;
+        var num = (gift + fixed) * 10000;
+        var den = 10000 - rate;
+        var n = 2 * num + den, m = 2 * den;
+        return (n - (n % m)) / m;
+    }
+
+    function donationAmountError(cents, hadText) {
+        var d = config.donation;
+        if (cents === null) return hadText ? 'Please enter an amount like 25 or 25.50.' : '';
+        if (cents < d.minCents) return 'The minimum donation is ' + money(d.minCents / 100) + '.';
+        if (cents > d.maxCents) return 'For a gift over ' + money(d.maxCents / 100).replace('.00', '') + ', please contact the church directly.';
+        return '';
+    }
+
+    function currentDonationCents() {
+        var input = document.getElementById('blc-don-amount');
+        return input ? parseCents(input.value) : null;
+    }
+
+    function updateDonation() {
+        var input = document.getElementById('blc-don-amount');
+        if (!input) return;
+
+        var cents = parseCents(input.value);
+        var err = donationAmountError(cents, input.value.trim() !== '');
+        var errEl = document.getElementById('blc-don-error');
+        if (errEl) {
+            errEl.textContent = err;
+            errEl.style.display = err ? 'block' : 'none';
+        }
+
+        var ok = cents !== null && !err;
+        var total = ok ? donationTotalCents(cents) : 0;
+        var gift = ok ? cents : 0;
+        var fee = ok ? total - cents : 0;
+
+        setText('blc-don-gift', money(gift / 100));
+        setText('blc-don-fee', money(fee / 100));
+        setText('blc-don-total', money(total / 100));
+        setText('blc-quickpay-total-big', money(total / 100));
+
+        // The fee lines appear whenever a fee is set up, even before an
+        // amount is typed, so the donor knows up front it will be added.
+        showRow('blc-don-fee-row', config.donation.hasFee);
+        showRow('blc-don-total-row', config.donation.hasFee);
+
+        // Keep the preset highlight honest: lit only when it matches the box.
+        document.querySelectorAll('.blc-don-preset').forEach(function (b) {
+            b.classList.toggle('active', ok && parseCents(b.getAttribute('data-amount')) === cents);
+        });
+    }
+
+    function initDonation() {
+        var input = document.getElementById('blc-don-amount');
+        if (!input) return;
+
+        document.querySelectorAll('.blc-don-preset').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                input.value = btn.getAttribute('data-amount');
+                updateDonation();
+            });
+        });
+
+        input.addEventListener('input', updateDonation);
+        updateDonation();
+    }
+
+    function lockDonation() {
+        var input = document.getElementById('blc-don-amount');
+        if (input) input.disabled = true;
+        document.querySelectorAll('.blc-don-preset').forEach(function (b) { b.disabled = true; });
+    }
+
+    // ========================================================================
     // Payment page
     // ========================================================================
     function initPayment() {
         var container = document.getElementById('blc-quickpay-buttons');
         if (!container || !config.itemId) return;
 
-        initQuantity();
+        var donate = !!config.donation;
+        if (donate) { initDonation(); } else { initQuantity(); }
 
         if (typeof paypal === 'undefined') {
             container.innerHTML = '<div class="blc-message blc-error" style="display:block;">PayPal failed to load. Please refresh the page and try again.</div>';
@@ -110,7 +218,22 @@
         }
 
         paypal.Buttons({
-            style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'pay' },
+            style: { layout: 'vertical', color: 'gold', shape: 'rect', label: donate ? 'donate' : 'pay' },
+
+            // A donation has no fixed price, so check the amount before PayPal
+            // opens. The server checks it again; this just saves a wasted trip.
+            onClick: function (data, actions) {
+                if (!donate) return actions.resolve();
+
+                var cents = currentDonationCents();
+                var err = donationAmountError(cents, true) || (cents === null ? 'Please enter the amount you would like to give.' : '');
+                if (err) {
+                    showMessage('blc-quickpay-message', err, 'error');
+                    return actions.reject();
+                }
+                hideMessage('blc-quickpay-message');
+                return actions.resolve();
+            },
 
             createOrder: function () {
                 showMessage('blc-quickpay-message', '<span class="blc-spinner"></span> Starting your payment...', 'loading');
@@ -121,7 +244,9 @@
                     // Read at the moment they pay, so a change made after the
                     // PayPal buttons appeared is still honoured. The server
                     // works out the price; this is only how many.
-                    body: JSON.stringify({ item_id: config.itemId, quantity: getQuantity() })
+                    body: JSON.stringify(donate
+                        ? { item_id: config.itemId, amount_cents: currentDonationCents() }
+                        : { item_id: config.itemId, quantity: getQuantity() })
                 })
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
@@ -151,7 +276,7 @@
                     if (result.success) {
                         showMessage('blc-quickpay-message', result.message, 'success');
                         container.innerHTML = '';
-                        lockQuantity();
+                        if (donate) { lockDonation(); } else { lockQuantity(); }
                     } else {
                         showMessage('blc-quickpay-message', result.message || 'Payment could not be confirmed. Please contact us.', 'error');
                     }
@@ -254,7 +379,7 @@
                 '<td style="font-weight:600;">' + escapeHtml(p.name) + '</td>' +
                 '<td>' + escapeHtml(formatCard(p)) + '</td>' +
                 '<td>' + escapeHtml(p.label || '—') + '</td>' +
-                '<td style="text-align:right;">' + escapeHtml(p.quantity || 1) + '</td>' +
+                '<td style="text-align:right;">' + (p.quantity === 0 ? '\u2014' : escapeHtml(p.quantity || 1)) + '</td>' +
                 '<td style="text-align:right;font-weight:600;">$' + Number(p.amount).toFixed(2) + '</td>' +
                 '</tr>';
         }

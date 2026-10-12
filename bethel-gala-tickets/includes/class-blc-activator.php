@@ -109,6 +109,18 @@ class BLC_Gala_Activator {
             add_option( 'blc_gala_quickpay_fee_fixed', (float) get_option( 'blc_gala_paypal_fee_fixed', 0.49 ) );
         }
 
+        // The donation QR code has its own fee too. Same rule: start from the
+        // gala fee so nothing changes on update, then let it be edited.
+        if ( get_option( 'blc_gala_donateqr_fee_rate' ) === false ) {
+            add_option( 'blc_gala_donateqr_fee_rate', (float) get_option( 'blc_gala_paypal_fee_rate', 2.99 ) );
+        }
+        if ( get_option( 'blc_gala_donateqr_fee_fixed' ) === false ) {
+            add_option( 'blc_gala_donateqr_fee_fixed', (float) get_option( 'blc_gala_paypal_fee_fixed', 0.49 ) );
+        }
+        if ( get_option( 'blc_gala_donateqr_note' ) === false ) {
+            add_option( 'blc_gala_donateqr_note', 'Always on Mission donation' );
+        }
+
         // Upgrade: if max_per_order was set to 1 from an older version, bump to 10
         if ( (int) get_option( 'blc_gala_max_per_order' ) === 1 ) {
             update_option( 'blc_gala_max_per_order', 10 );

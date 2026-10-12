@@ -139,6 +139,11 @@ class BLC_Gala_REST_API {
         $params  = $request->get_json_params();
         $item_id = isset( $params['item_id'] ) ? sanitize_text_field( $params['item_id'] ) : '';
 
+        // The donation QR code is open-amount, so it takes its own path.
+        if ( BLC_Gala_QuickPay::DONATE_ID === $item_id ) {
+            return $this->quickpay_create_donation( $params );
+        }
+
         // The price always comes from the saved item, never from the request,
         // so editing the URL cannot change what gets charged. The browser
         // only chooses how many; the server multiplies.
@@ -172,6 +177,57 @@ class BLC_Gala_REST_API {
         $description = $quantity > 1 ? $item['label'] . ' × ' . $quantity : $item['label'];
 
         $paypal_order = $paypal->create_order( $order_data['order_uuid'], $totals['total'], $description );
+
+        if ( is_wp_error( $paypal_order ) ) {
+            $wpdb->delete( $wpdb->prefix . 'blc_gala_orders', array( 'order_uuid' => $order_data['order_uuid'] ) );
+            return $paypal_order;
+        }
+
+        $wpdb->update(
+            $wpdb->prefix . 'blc_gala_orders',
+            array( 'paypal_order_id' => $paypal_order['id'] ),
+            array( 'order_uuid' => $order_data['order_uuid'] )
+        );
+
+        return rest_ensure_response( array(
+            'paypal_order_id' => $paypal_order['id'],
+            'order_uuid'      => $order_data['order_uuid'],
+        ) );
+    }
+
+    /**
+     * Start a donation from the donation QR code.
+     *
+     * The donor chooses the gift; the server adds the fee and decides what
+     * PayPal charges. The note is what shows on the church's PayPal record.
+     */
+    private function quickpay_create_donation( $params ) {
+        global $wpdb;
+
+        $gift_cents = BLC_Gala_QuickPay::sanitize_donation_cents( isset( $params['amount_cents'] ) ? $params['amount_cents'] : null );
+
+        if ( is_wp_error( $gift_cents ) ) {
+            $gift_cents->add_data( array( 'status' => 400 ) );
+            return $gift_cents;
+        }
+
+        $paypal = new BLC_Gala_PayPal();
+        if ( ! $paypal->is_configured() ) {
+            return new WP_Error( 'paypal_not_configured', 'Payments are not set up yet.', array( 'status' => 503 ) );
+        }
+
+        $totals = BLC_Gala_QuickPay::donation_total( $gift_cents );
+        $note   = BLC_Gala_QuickPay::donation_note();
+
+        // Quantity 0: this is a gift, not tickets.
+        $tickets_mgr = new BLC_Gala_Tickets();
+        $order_data  = $tickets_mgr->create_quickpay_order( $note, $totals['total'], 0 );
+
+        if ( is_wp_error( $order_data ) ) {
+            return $order_data;
+        }
+
+        $paypal_order = $paypal->create_order( $order_data['order_uuid'], $totals['total'], $note );
 
         if ( is_wp_error( $paypal_order ) ) {
             $wpdb->delete( $wpdb->prefix . 'blc_gala_orders', array( 'order_uuid' => $order_data['order_uuid'] ) );
@@ -228,6 +284,14 @@ class BLC_Gala_REST_API {
 
         $qty = (int) $order->quantity;
 
+        // Quantity 0 is a donation rather than tickets.
+        if ( 0 === $qty ) {
+            return rest_ensure_response( array(
+                'success' => true,
+                'message' => 'Thank you for your generous gift! Your donation of $' . number_format( (float) $order->amount_paid, 2 ) . ' was received.',
+            ) );
+        }
+
         return rest_ensure_response( array(
             'success' => true,
             'message' => 'Thank you! Your payment of $' . number_format( (float) $order->amount_paid, 2 )
@@ -253,7 +317,7 @@ class BLC_Gala_REST_API {
                 'card_last4' => $row->card_last4,
                 'card_brand' => $row->card_brand,
                 'amount'     => (float) $row->amount_paid,
-                'quantity'   => max( 1, (int) $row->quantity ),
+                'quantity'   => max( 0, (int) $row->quantity ),   // 0 = a donation, no tickets
                 'label'      => $row->payment_label,
                 'created_at' => $row->created_at,
             );

@@ -881,3 +881,14 @@
         width: 100% !important;
     }
 }
+
+/* Donation presets on touch screens: phones keep :hover after a tap, which
+   left the last-tapped amount looking selected after the donor typed a
+   different one. Only the .active class should light a preset there. */
+@media (hover: none) {
+    .blc-don-preset:not(.active):hover {
+        border-color: var(--blc-border);
+        background: var(--blc-bg);
+        color: var(--blc-secondary);
+    }
+}

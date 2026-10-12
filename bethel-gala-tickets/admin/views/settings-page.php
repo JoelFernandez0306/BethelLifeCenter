@@ -565,6 +565,108 @@
         </div>
     <?php endif; ?>
 
+    <hr style="margin: 40px 0 25px;" />
+
+    <?php
+    // ---------------------------------------------------------------------
+    // Donation QR Code
+    // ---------------------------------------------------------------------
+    $don_notice  = isset( $_GET['blc_don_notice'] ) ? sanitize_text_field( wp_unslash( $_GET['blc_don_notice'] ) ) : '';
+    $don_fee     = BLC_Gala_QuickPay::donation_fee_settings();
+    $don_note    = BLC_Gala_QuickPay::donation_note();
+    $don_url     = BLC_Gala_QuickPay::get_donation_url();
+    $don_example = BLC_Gala_QuickPay::donation_total( 5000 );
+    $don_qr      = new BLC_Gala_QR_Generator();
+
+    // 1.99, not 1.990 — and a whole number stays whole.
+    $fmt_pct = function ( $n ) {
+        return rtrim( rtrim( number_format( (float) $n, 2 ), '0' ), '.' );
+    };
+    ?>
+
+    <h2 id="blc-donation-qr">Donation QR Code</h2>
+    <p class="description" style="max-width: 700px;">
+        One QR code for gifts of any size. Whoever scans it picks or types the amount they want to give and
+        pays with the same PayPal account as everything else. The payment is recorded as
+        <strong>&ldquo;<?php echo esc_html( $don_note ); ?>&rdquo;</strong> in PayPal.
+        It uses the same page as the QR codes above, so there is nothing new to set up.
+    </p>
+
+    <?php if ( $don_notice === 'saved' ) : ?>
+        <div class="notice notice-success is-dismissible"><p>Donation QR code settings saved. Gala tickets and raffle QR codes were not changed.</p></div>
+    <?php elseif ( $don_notice === 'invalid' ) : ?>
+        <?php $don_error = get_transient( 'blc_don_error' ); delete_transient( 'blc_don_error' ); ?>
+        <div class="notice notice-error is-dismissible"><p><?php echo esc_html( $don_error ? $don_error : 'Could not save those settings.' ); ?></p></div>
+    <?php endif; ?>
+
+    <form method="post" action="" style="margin: 20px 0; padding: 15px 20px; background: #fff; border: 1px solid #c3c4c7; max-width: 700px;">
+        <?php wp_nonce_field( 'blc_don_save' ); ?>
+        <h3 style="margin-top: 0;">Donation QR Code PayPal Fee</h3>
+        <p class="description" style="margin-top: 0;">
+            Currently <strong><?php echo esc_html( $fmt_pct( $don_fee['rate'] ) ); ?>% + $<?php echo esc_html( number_format( $don_fee['fixed'], 2 ) ); ?></strong>.
+            This is added on top of the amount the donor chooses, so the whole gift reaches the mission.
+            It is separate from the gala ticket fee
+            (<?php echo esc_html( $fmt_pct( get_option( 'blc_gala_paypal_fee_rate', 2.99 ) ) ); ?>% + $<?php echo esc_html( number_format( (float) get_option( 'blc_gala_paypal_fee_fixed', 0.49 ), 2 ) ); ?>)
+            and the raffle QR fee, and changing this does not affect either.
+        </p>
+        <table class="form-table">
+            <tr>
+                <th><label for="blc_don_fee_rate">Percentage Fee (%)</label></th>
+                <td>
+                    <input type="number" id="blc_don_fee_rate" name="blc_don_fee_rate" class="small-text" min="0" max="20" step="0.01" value="<?php echo esc_attr( $don_fee['rate'] ); ?>" required />
+                    <p class="description">The percent PayPal takes. For 1.99%, type <code>1.99</code>.</p>
+                </td>
+            </tr>
+            <tr>
+                <th><label for="blc_don_fee_fixed">Fixed Fee ($)</label></th>
+                <td>
+                    <input type="number" id="blc_don_fee_fixed" name="blc_don_fee_fixed" class="small-text" min="0" max="5" step="0.01" value="<?php echo esc_attr( $don_fee['fixed'] ); ?>" required />
+                    <p class="description">The flat amount PayPal adds per payment. For 49 cents, type <code>0.49</code>.</p>
+                </td>
+            </tr>
+            <tr>
+                <th><label for="blc_don_note">Note in PayPal</label></th>
+                <td>
+                    <input type="text" id="blc_don_note" name="blc_don_note" class="regular-text" maxlength="100" value="<?php echo esc_attr( $don_note ); ?>" />
+                    <p class="description">The description attached to each donation in your PayPal account. Leave as is for &ldquo;<?php echo esc_html( BLC_Gala_QuickPay::DEFAULT_DONATE_NOTE ); ?>&rdquo;.</p>
+                </td>
+            </tr>
+        </table>
+        <p class="description">
+            With these numbers a <strong>$50.00</strong> gift charges the donor
+            <strong>$<?php echo esc_html( number_format( $don_example['total'], 2 ) ); ?></strong>
+            (fee $<?php echo esc_html( number_format( $don_example['fee'], 2 ) ); ?>), and the mission receives $50.00.
+        </p>
+        <p><button type="submit" name="blc_don_save" value="1" class="button button-primary">Save Donation QR Settings</button></p>
+    </form>
+
+    <div class="blc-qp-grid">
+        <div class="blc-qp-card" data-label="Donate" data-amount="Give any amount" data-hint="Scan with your phone camera to give">
+            <h4 class="blc-qp-card-label">Always on Mission Donation</h4>
+            <div class="blc-qp-card-amount" style="font-size: 20px;">Any amount</div>
+
+            <div class="blc-qp-card-qr">
+                <?php
+                if ( $don_url ) {
+                    echo $don_qr->generate_svg( $don_url, 200 );
+                } else {
+                    echo '<p class="description">Publish the Quick Pay page (see above) to generate this QR code.</p>';
+                }
+                ?>
+            </div>
+
+            <p class="description blc-qp-card-breakdown">Donor chooses the amount &middot; fee added on top</p>
+
+            <?php if ( $don_url ) : ?>
+                <p class="blc-qp-card-actions">
+                    <button type="button" class="button blc-qp-print">Print</button>
+                    <button type="button" class="button blc-qp-download">Download</button>
+                </p>
+                <p class="description blc-qp-card-url"><a href="<?php echo esc_url( $don_url ); ?>" target="_blank">Open donation page</a></p>
+            <?php endif; ?>
+        </div>
+    </div>
+
     <h3 style="margin-top: 30px;">Payment Log Page</h3>
     <table class="form-table">
         <tr>
